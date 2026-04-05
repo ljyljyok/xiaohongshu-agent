@@ -99,6 +99,9 @@ class ContentAuditor:
             (r"比光速还快", "内容包含明显不可信的性能描述。"),
         ]
 
+    def _active_model(self):
+        return getattr(self.client, "default_model", None)
+
     def audit_content(self, post):
         audit_result = {
             "is_safe": True,
@@ -626,7 +629,7 @@ class ContentAuditor:
                 ]
             )
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self._active_model(),
                 messages=[
                     {"role": "system", "content": "你是内容事实核验编辑，只输出 JSON，不要额外解释。"},
                     {"role": "user", "content": prompt},
