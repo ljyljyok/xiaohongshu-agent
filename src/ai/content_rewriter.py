@@ -194,7 +194,7 @@ class ContentRewriter:
         if self.use_ai_mode and self.client and platform != "小红书":
             try:
                 response = self.client.chat.completions.create(
-                    model="gpt-4o-mini",
+                    model=self._active_model(),
                     messages=[
                         {"role": "system", "content": "请根据平台风格优化内容。"},
                         {"role": "user", "content": "请把下面内容优化成更适合{}平台的版本：\n\n{}".format(platform, content[:2500])},
@@ -265,7 +265,7 @@ class ContentRewriter:
             if media_type == "video":
                 prompt.append("视频转写：{}".format((post.get("video_transcript") or "")[:3500]))
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self._active_model(),
                 messages=[
                     {"role": "system", "content": "你是一名负责整理技术内容阅读笔记的编辑。"},
                     {"role": "user", "content": "\n".join(prompt)},
@@ -352,7 +352,7 @@ class ContentRewriter:
                 "媒体细节：{}".format("；".join(media_insights[:6]) or "无"),
             ]
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self._active_model(),
                 messages=[
                     {"role": "system", "content": "你是一名擅长整理高信息密度小红书文案的中文编辑。"},
                     {"role": "user", "content": "\n".join(prompt)},
@@ -447,7 +447,7 @@ class ContentRewriter:
                 "媒体细节：{}".format("；".join(media_insights[:6]) or "无"),
             ]
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self._active_model(),
                 messages=[
                     {"role": "system", "content": "你是一名擅长写信息密度高的小红书内容编辑。"},
                     {"role": "user", "content": "\n".join(prompt)},
@@ -486,7 +486,7 @@ class ContentRewriter:
     def _summarize_with_ai(self, content, max_length):
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self._active_model(),
                 messages=[
                     {"role": "system", "content": "请把内容总结成简洁但信息密度高的中文摘要。"},
                     {"role": "user", "content": "请把以下内容总结到{}字以内：\n\n{}".format(max_length, content[:2000])},
