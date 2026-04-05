@@ -10,6 +10,7 @@ import sys
 from datetime import datetime
 
 import streamlit as st
+import streamlit.components.v1 as components
 from PIL import Image
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -677,6 +678,46 @@ def read_text(path: str) -> str:
             return fh.read()
     except Exception:
         return ""
+
+
+def _repair_mojibake_line(line: str) -> str:
+    if not line:
+        return line
+    suspicious = ("鐧", "鍚", "鎼", "璇", "鏄", "闃", "宸", "鏈", "瑙", "绗")
+    if sum(line.count(token) for token in suspicious) < 2:
+        return line
+    for source_encoding in ("gb18030", "gbk"):
+        try:
+            repaired = line.encode(source_encoding, errors="strict").decode("utf-8", errors="strict")
+        except Exception:
+            continue
+        if repaired and repaired != line:
+            return repaired
+    return line
+
+
+def read_log_text(path: str, max_chars: int = 6000) -> str:
+    if not path or not os.path.exists(path):
+        return ""
+    try:
+        with open(path, "rb") as fh:
+            raw = fh.read()
+    except Exception:
+        return ""
+
+    text = ""
+    for encoding in ("utf-8", "utf-8-sig", "gb18030"):
+        try:
+            text = raw.decode(encoding)
+            break
+        except Exception:
+            continue
+    if not text:
+        text = raw.decode("utf-8", errors="replace")
+
+    fixed_lines = [_repair_mojibake_line(line) for line in text.splitlines()]
+    repaired = "\n".join(fixed_lines)
+    return repaired[-max_chars:]
 
 
 def read_json(path: str):
