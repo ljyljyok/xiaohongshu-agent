@@ -42,6 +42,9 @@ class ContentRewriter:
             "如果你也在做同类内容，可以直接按这份阅读笔记继续展开。",
         ]
 
+    def _active_model(self):
+        return getattr(self.client, "default_model", None)
+
     def summarize_content(self, content, max_length=220):
         if not content:
             return ""
