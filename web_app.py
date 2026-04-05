@@ -1215,6 +1215,7 @@ def show_settings():
         settings = load_ai_settings()
 
     st.markdown("---")
+    render_section("服务状态", "检查本地模型、默认地址、默认模型和当前策略。", icon="🧪")
     st.subheader("服务状态")
     col1, col2, col3 = st.columns(3)
     col1.metric("Ollama 状态", "可用" if ollama_available else "不可用")
