@@ -610,19 +610,10 @@ def render_state_grid(items: list[tuple[str, str, str, str]]):
     cols = st.columns(len(items))
     for col, (icon, title, value, note) in zip(cols, items):
         with col:
-            st.markdown(
-                """
-                <div class="state-panel">
-                    <div class="state-panel-head">
-                        <span class="state-panel-icon">{}</span>
-                        <span>{}</span>
-                    </div>
-                    <div class="state-panel-value">{}</div>
-                    <div class="state-panel-note">{}</div>
-                </div>
-                """.format(icon, title, value, note),
-                unsafe_allow_html=True,
-            )
+            card = st.container(border=True)
+            card.markdown("### {} {}".format(icon, title))
+            card.write(value)
+            card.caption(note)
 
 
 def render_empty_shell(title: str, description: str):
@@ -1146,42 +1137,68 @@ def show_dashboard(dm: DraftManager):
         st.code("python scripts/crawl_latest_aigc.py")
         return
 
-    st.subheader("✨ 最新草稿")
-    for idx, draft in enumerate(drafts[:8]):
-        post = draft.get("post", {})
-        title = post.get("title") or "无标题"
-        images = collect_post_images(post)
-        status_label = format_status_label(draft.get("status", "未知"))
-        media_label = format_media_label(post.get("media_type", "image"))
-        title_line = "{} {} | {} {} | {}".format(
-            media_icon(post.get("media_type", "image")),
-            title,
-            status_icon(draft.get("status", "unknown")),
-            status_label,
-            media_label,
-        )
-        with st.expander("{} | {}张图片".format(title_line, len(images)), expanded=False):
-            render_cover_card(
-                "{} {}  {} {}".format(
-                    media_icon(post.get("media_type", "image")),
-                    title,
-                    status_icon(draft.get("status", "unknown")),
-                    status_label,
-                ),
-                "{} | {} | 作者 {}".format(status_label, media_label, post.get("author") or "未知"),
-                [
-                    ("{}".format(status_label), "green" if draft.get("status") == "published" else "slate"),
-                    ("{}".format(media_label), "orange" if post.get("media_type") == "video" else "slate"),
-                    ("已收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else "slate"),
-                ],
+    main_col, side_col = st.columns([1.8, 1], gap="large")
+    with main_col:
+        st.subheader("✨ 最新草稿")
+        for idx, draft in enumerate(drafts[:8]):
+            post = draft.get("post", {})
+            title = post.get("title") or "无标题"
+            images = collect_post_images(post)
+            status_label = format_status_label(draft.get("status", "未知"))
+            media_label = format_media_label(post.get("media_type", "image"))
+            title_line = "{} {} | {} {} | {}".format(
+                media_icon(post.get("media_type", "image")),
+                title,
+                status_icon(draft.get("status", "unknown")),
+                status_label,
+                media_label,
             )
-            render_action_strip([
-                "来源 {}".format(post.get("source") or "未知"),
-                "图片 {} 张".format(len(images)),
-                "审核 {}".format("通过" if post.get("audit", {}).get("publish_ready") else "待确认"),
-            ])
-            render_cover_preview(images, "dashboard_cover_{}".format(idx))
-            render_post_tabs(post, "dashboard_post_{}".format(idx))
+            with st.expander("{} | {}张图片".format(title_line, len(images)), expanded=False):
+                render_cover_card(
+                    "{} {}  {} {}".format(
+                        media_icon(post.get("media_type", "image")),
+                        title,
+                        status_icon(draft.get("status", "unknown")),
+                        status_label,
+                    ),
+                    "{} | {} | 作者 {}".format(status_label, media_label, post.get("author") or "未知"),
+                    [
+                        ("{}".format(status_label), "green" if draft.get("status") == "published" else "slate"),
+                        ("{}".format(media_label), "orange" if post.get("media_type") == "video" else "slate"),
+                        ("已收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else "slate"),
+                    ],
+                )
+                render_action_strip([
+                    "来源 {}".format(post.get("source") or "未知"),
+                    "图片 {} 张".format(len(images)),
+                    "审核 {}".format("通过" if post.get("audit", {}).get("publish_ready") else "待确认"),
+                ])
+                render_cover_preview(images, "dashboard_cover_{}".format(idx))
+                render_post_tabs(post, "dashboard_post_{}".format(idx))
+    with side_col:
+        st.markdown(
+            """
+            <div class="quick-panel">
+                <h3>快捷总览</h3>
+                <p>待发布草稿: {}</p>
+                <p>已收藏草稿: {}</p>
+                <p>审核通过: {}</p>
+                <p>视频草稿: {}</p>
+            </div>
+            """.format(pending, favorites, approved, video_posts),
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            """
+            <div class="quick-panel">
+                <h3>建议下一步</h3>
+                <p>1. 先检查待发布草稿的阅读笔记与封面。</p>
+                <p>2. 再确认原贴来源与审核状态。</p>
+                <p>3. 最后统一执行发布或收藏动作。</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 def show_login_page():
