@@ -107,7 +107,8 @@ class ContentAnalyzer:
                     {
                         "role": "system",
                         "content": (
-                            "你是一个 AI 内容分析专家。请输出 JSON："
+                            "你是一个 AI 内容分析专家。只能输出 1 个 JSON 对象，不要解释，不要 markdown，不要额外文字。"
+                            "请输出 JSON："
                             '{"is_ai_related": true/false, "content_type": "AI资讯/AI工具/AI教程/其他", '
                             '"relevance_score": 0-10, "keywords": ["关键词"]}'
                         ),
@@ -118,7 +119,7 @@ class ContentAnalyzer:
                     },
                 ],
                 temperature=0.2,
-                max_tokens=220,
+                max_tokens=420,
             )
             ai_response = (response.choices[0].message.content or "").strip()
             clean_response = ai_response
