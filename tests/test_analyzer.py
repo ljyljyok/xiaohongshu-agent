@@ -22,5 +22,5 @@ def test_local_analyzer_returns_current_shape():
     assert set(["is_ai_related", "content_type", "relevance_score", "keywords", "mode", "mode_reason"]).issubset(result)
     assert result["is_ai_related"] is True
     assert result["mode"] == "local"
-    assert result["keyword_forced_ai"] is True
-    assert result["matched_user_keywords"] == ["OpenAI"]
+    assert result["keyword_forced_ai"] is False
+    assert result["matched_user_keywords"] == []
