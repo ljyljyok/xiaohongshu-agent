@@ -562,25 +562,36 @@ def show_login_page():
 
 def show_drafts(dm: DraftManager):
     drafts = dm.list_drafts()
-    st.header("草稿管理")
+    st.markdown("## 📝 草稿管理中心")
+
     if not drafts:
-        st.info("暂无草稿。")
+        st.info("📭 暂无草稿。")
         return
 
-    status_filter = st.selectbox(
-        "状态筛选",
-        ["全部", "draft", "published", "discarded"],
-        format_func=lambda value: "全部" if value == "全部" else format_status_label(value),
-        key="draft_status_filter",
-    )
-    media_filter = st.selectbox(
-        "媒体类型",
-        ["全部", "image", "video"],
-        format_func=lambda value: {"全部": "全部", "image": "图文", "video": "视频"}.get(value, value),
-        key="draft_media_filter",
-    )
-    favorite_filter = st.selectbox("收藏筛选", ["全部", "仅收藏", "未收藏"], key="draft_favorite_filter")
-    keyword = st.text_input("搜索标题或文案", "", key="draft_keyword")
+    st.markdown("### 🔍 筛选与搜索")
+    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
+
+    with filter_col1:
+        status_filter = st.selectbox(
+            "📊 状态筛选",
+            ["全部", "draft", "published", "discarded"],
+            format_func=lambda value: "全部" if value == "全部" else format_status_label(value),
+            key="draft_status_filter",
+        )
+
+    with filter_col2:
+        media_filter = st.selectbox(
+            "🎨 媒体类型",
+            ["全部", "image", "video"],
+            format_func=lambda value: {"全部": "全部", "image": "🖼️ 图文", "video": "🎬 视频"}.get(value, value),
+            key="draft_media_filter",
+        )
+
+    with filter_col3:
+        favorite_filter = st.selectbox("❤️ 收藏筛选", ["全部", "仅收藏", "未收藏"], key="draft_favorite_filter")
+
+    with filter_col4:
+        keyword = st.text_input("🔎 搜索标题或文案", "", key="draft_keyword")
 
     filtered = []
     for draft in drafts:
@@ -599,7 +610,10 @@ def show_drafts(dm: DraftManager):
             continue
         filtered.append(draft)
 
-    st.info("筛选结果: {} / {} 个草稿".format(len(filtered), len(drafts)))
+    st.info(f"📊 筛选结果: **{len(filtered)}** / {len(drafts)} 个草稿")
+
+    st.markdown("---")
+    st.markdown("### 📋 草稿列表")
 
     for idx, draft in enumerate(filtered):
         post = draft.get("post", {})
@@ -607,35 +621,67 @@ def show_drafts(dm: DraftManager):
         images = collect_post_images(post)
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
-        with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
-            badge_cols = st.columns(4)
-            badge_cols[0].caption("收藏: {}".format("是" if draft.get("favorite") else "否"))
-            badge_cols[1].caption("来源: {}".format(post.get("source") or "未知"))
-            badge_cols[2].caption("作者: {}".format(post.get("author") or "未知"))
-            badge_cols[3].caption("审核通过: {}".format("是" if post.get("audit", {}).get("publish_ready") else "否"))
-            render_post_tabs(post, "draft_post_{}".format(idx))
+        status_emoji = {"待发布": "⏳", "已发布": "✅", "已丢弃": "🗑️"}.get(status_label, "📋")
+        media_emoji = {"图文": "🖼️", "视频": "🎬"}.get(media_label, "📄")
 
+        with st.expander(
+            f"{status_emoji} {title} | {media_emoji} {media_label} | 📷 {len(images)}张图片",
+            expanded=False,
+        ):
+            badge_cols = st.columns(4)
+            badge_cols[0].caption(f"💾 收藏: {'✅ 是' if draft.get('favorite') else '○ 否'}")
+            badge_cols[1].caption(f"🔗 来源: {post.get('source') or '未知'}")
+            badge_cols[2].caption(f"✍️ 作者: {post.get('author') or '未知'}")
+            audit_ready = post.get("audit", {}).get("publish_ready")
+            badge_cols[3].caption(f"✅ 审核通过: {'是' if audit_ready else '否'}")
+
+            render_post_tabs(post, f"draft_post_{idx}")
+
+            st.markdown("#### ⚡ 操作面板")
             col1, col2, col3 = st.columns(3)
             with col1:
-                if st.button("发布到小红书", key="publish_{}".format(draft["id"])):
+                if st.button(
+                    "📤 发布到小红书",
+                    key=f"publish_{draft['id']}",
+                    use_container_width=True,
+                ):
                     result = publish_draft(dm, draft)
                     if isinstance(result, dict) and result.get("success"):
-                        st.success(result.get("message", "发布成功"))
+                        st.success(f"✅ {result.get('message', '发布成功')}")
+                        st.balloons()
                     else:
-                        st.error((result or {}).get("message", "发布失败") if isinstance(result, dict) else "发布失败")
+                        st.error(
+                            (result or {}).get("message", "发布失败")
+                            if isinstance(result, dict)
+                            else "发布失败"
+                        )
                     st.rerun()
+
             with col2:
-                if st.button("收藏原贴", key="favorite_{}".format(draft["id"])):
+                if st.button(
+                    "⭐ 收藏原贴",
+                    key=f"favorite_{draft['id']}",
+                    use_container_width=True,
+                ):
                     result = favorite_source(dm, draft)
                     if isinstance(result, dict) and result.get("success"):
-                        st.success(result.get("message", "已收藏"))
+                        st.success(f"✅ {result.get('message', '已收藏')}")
                     else:
-                        st.warning((result or {}).get("message", "收藏失败") if isinstance(result, dict) else "收藏失败")
+                        st.warning(
+                            (result or {}).get("message", "收藏失败")
+                            if isinstance(result, dict)
+                            else "收藏失败"
+                        )
                     st.rerun()
+
             with col3:
-                if st.button("删除草稿", key="delete_{}".format(draft["id"])):
+                if st.button(
+                    "🗑️ 删除草稿",
+                    key=f"delete_{draft['id']}",
+                    use_container_width=True,
+                ):
                     dm.delete_draft(draft["id"])
-                    st.success("草稿已删除")
+                    st.success("🗑️ 草稿已删除")
                     st.rerun()
 
 
