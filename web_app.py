@@ -79,6 +79,28 @@ APP_CSS = """
     section[data-testid="stSidebar"] span {
         color: #e5e7eb !important;
     }
+    section[data-testid="stSidebar"] div[role="radiogroup"] > label {
+        border-radius: 14px;
+        margin: 0.18rem 0;
+        padding: 0.32rem 0.45rem;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid transparent;
+        transition: all 0.18s ease;
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.24), rgba(249, 115, 22, 0.16));
+        border-color: rgba(147, 197, 253, 0.22);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 10px 20px rgba(15, 23, 42, 0.18);
+        transform: translateX(2px);
+    }
+    section[data-testid="stSidebar"] div[role="radiogroup"] > label:has(input:checked) p {
+        color: #ffffff !important;
+        font-weight: 700;
+    }
     div[data-testid="stMetric"] {
         border-radius: 20px;
         padding: 1rem 1rem 0.8rem 1rem;
@@ -140,6 +162,9 @@ APP_CSS = """
         font-size: 2rem;
         font-weight: 800;
         letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
     }
     .hero-banner p {
         margin: 0;
@@ -171,6 +196,11 @@ APP_CSS = """
         color: #c2410c;
         border-color: rgba(234, 88, 12, 0.12);
     }
+    .status-badge.slate {
+        background: rgba(100, 116, 139, 0.1);
+        color: #475569;
+        border-color: rgba(100, 116, 139, 0.12);
+    }
     .section-shell {
         border-radius: 22px;
         padding: 1rem 1.1rem;
@@ -183,6 +213,43 @@ APP_CSS = """
     .section-shell h2 {
         margin: 0 0 0.2rem 0;
         font-size: 1.1rem;
+    }
+    .cover-card {
+        border-radius: 20px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-1);
+        margin-bottom: 0.8rem;
+    }
+    .cover-card-head {
+        padding: 0.9rem 1rem 0.6rem 1rem;
+    }
+    .cover-card-title {
+        margin: 0 0 0.2rem 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--ink-0);
+    }
+    .cover-card-sub {
+        margin: 0;
+        color: var(--ink-1);
+        font-size: 0.9rem;
+    }
+    .action-strip {
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+        margin: 0.2rem 0 0.3rem 0;
+    }
+    .action-chip {
+        display: inline-block;
+        padding: 0.32rem 0.75rem;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.04);
+        color: var(--ink-1);
+        font-size: 0.82rem;
+        border: 1px solid rgba(148, 163, 184, 0.14);
     }
     .sidebar-brand {
         border-radius: 18px;
@@ -221,14 +288,15 @@ def apply_theme():
     st.markdown(APP_CSS, unsafe_allow_html=True)
 
 
-def render_hero(title: str, subtitle: str):
+def render_hero(title: str, subtitle: str, icon: str = ""):
+    icon_html = f"<span>{icon}</span>" if icon else ""
     st.markdown(
         """
         <div class="hero-banner">
-            <h1>{}</h1>
+            <h1>{}{}</h1>
             <p>{}</p>
         </div>
-        """.format(title, subtitle),
+        """.format(icon_html, title, subtitle),
         unsafe_allow_html=True,
     )
 
@@ -254,6 +322,27 @@ def render_badges(items: list[tuple[str, str]]):
     )
     if html:
         st.markdown(html, unsafe_allow_html=True)
+
+
+def render_cover_card(title: str, subtitle: str, badges: list[tuple[str, str]]):
+    st.markdown(
+        """
+        <div class="cover-card">
+            <div class="cover-card-head">
+                <div class="cover-card-title">{}</div>
+                <div class="cover-card-sub">{}</div>
+            </div>
+        </div>
+        """.format(title, subtitle),
+        unsafe_allow_html=True,
+    )
+    render_badges(badges)
+
+
+def render_action_strip(items: list[str]):
+    html = "".join(f"<span class='action-chip'>{item}</span>" for item in items if item)
+    if html:
+        st.markdown(f"<div class='action-strip'>{html}</div>", unsafe_allow_html=True)
 
 
 def render_sidebar_brand():
