@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+lib/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.vscode/
+!.vscode/settings.json
+.idea/
+
+# Project specific
+data/*.txt
+data/images/*
+data/media/*
+!data/images/.gitkeep
+!data/media/.gitkeep
+data/drafts/*
+data/xhs_profile/*
+data/xhs_state/*
+!data/xhs_state/.gitkeep
+logs/*.log
+logs/*.txt
+logs/*.json
+archive/
+.omx/
+temp_images/
+err.txt
+out.txt
+*_err.txt
+*_out.txt
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+crawl_log_*.txt
+crawl_status_*.json
+streamlit.*
+
+# Temp files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Node (if any)
+node_modules/
