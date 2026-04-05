@@ -446,152 +446,94 @@ def show_dashboard(dm: DraftManager):
     pending = sum(1 for d in drafts if d.get("status") == "draft")
     approved = sum(1 for d in drafts if d.get("post", {}).get("audit", {}).get("publish_ready"))
 
-    st.markdown("## 📊 数据概览")
-
+    st.header("仪表盘")
     col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.metric("📋 草稿总数", len(drafts), delta=None)
-    with col2:
-        st.metric("⏳ 待发布", pending, delta=None)
-    with col3:
-        st.metric("🖼️ 图文帖", image_posts, delta=None)
-    with col4:
-        st.metric("🎬 视频帖", video_posts, delta=None)
-    with col5:
-        st.metric("✅ 审核通过", approved, delta=None)
-
-    with st.expander(f"❤️ 已收藏草稿: {favorites}", expanded=False):
-        if favorites > 0:
-            favorite_drafts = [d for d in drafts if d.get("favorite")]
-            for draft in favorite_drafts[:5]:
-                post = draft.get("post", {})
-                st.write(f"📌 {post.get('title', '无标题')} | {format_status_label(draft.get('status', '未知'))}")
-        else:
-            st.info("暂无收藏的草稿")
-
+    col1.metric("草稿总数", len(drafts))
+    col2.metric("待发布", pending)
+    col3.metric("图文帖", image_posts)
+    col4.metric("视频帖", video_posts)
+    col5.metric("审核通过", approved)
+    st.caption("已收藏草稿: {}".format(favorites))
     st.markdown("---")
 
     if not drafts:
-        st.info("📭 暂无草稿，请先执行抓取流程。")
+        st.info("暂无草稿，请先执行抓取流程。")
         st.code("python scripts/crawl_latest_aigc.py")
         return
 
-    st.markdown("### 🕐 最新草稿预览")
+    st.subheader("最新草稿")
     for idx, draft in enumerate(drafts[:8]):
         post = draft.get("post", {})
         title = post.get("title") or "无标题"
         images = collect_post_images(post)
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
-        status_emoji = {"待发布": "⏳", "已发布": "✅", "已丢弃": "🗑️"}.get(status_label, "📋")
-        media_emoji = {"图文": "🖼️", "视频": "🎬"}.get(media_label, "📄")
-
-        with st.expander(
-            f"{status_emoji} {title} | {media_emoji} {media_label} | 📷 {len(images)}张图片",
-            expanded=False,
-        ):
+        with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
             info_cols = st.columns(3)
-            info_cols[0].caption(f"💾 收藏状态: {'✅ 已收藏' if draft.get('favorite') else '○ 未收藏'}")
-            info_cols[1].caption(f"🔗 来源: {post.get('source') or '未知'}")
-            info_cols[2].caption(f"✍️ 作者: {post.get('author') or '未知'}")
-            render_post_tabs(post, f"dashboard_post_{idx}")
+            info_cols[0].caption("收藏状态: {}".format("已收藏" if draft.get("favorite") else "未收藏"))
+            info_cols[1].caption("来源: {}".format(post.get("source") or "未知"))
+            info_cols[2].caption("作者: {}".format(post.get("author") or "未知"))
+            render_post_tabs(post, "dashboard_post_{}".format(idx))
 
 
 def show_login_page():
-    st.markdown("## 🔐 登录授权管理")
+    st.header("登录授权")
     status, file_state = get_login_state()
     state_label = LOGIN_STATUS_LABELS.get(status.get("state"), format_status_label(status.get("state")))
 
     col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("🔑 登录状态", state_label)
-    with col2:
-        st.metric("⚙️ 后端", "MCP")
-    with col3:
-        profile_exists = os.path.isdir(XHS_PROFILE_DIR)
-        st.metric("📁 Profile 目录", "✅ 已存在" if profile_exists else "❌ 未创建")
-    with col4:
-        cookie_exists = os.path.exists(XHS_COOKIE_FILE)
-        st.metric("🍪 Cookie 回退", "⚠️ 已存在" if cookie_exists else "✅ 未生成（正常）")
+    col1.metric("登录状态", state_label)
+    col2.metric("后端", "MCP")
+    col3.metric("Profile 目录", "已存在" if os.path.isdir(XHS_PROFILE_DIR) else "未创建")
+    col4.metric("Cookie 回退", "未生成（正常）" if not os.path.exists(XHS_COOKIE_FILE) else "已存在")
 
-    st.markdown("---")
+    if st.button("启动浏览器登录", type="primary", key="start_login_btn"):
+        start_login()
+        st.success("已启动登录流程，请在浏览器中完成登录。")
 
-    c1, c2 = st.columns([1, 3])
-    with c1:
-        if st.button("🚀 启动浏览器登录", type="primary", key="start_login_btn", use_container_width=True):
-            start_login()
-            st.success("✅ 已启动登录流程，请在浏览器中完成登录。")
-            st.balloons()
-
-    with c2:
-        if status.get("reason"):
-            st.info(f"ℹ️ 状态说明: {status.get('reason')}")
+    if status.get("reason"):
+        st.caption("状态说明: {}".format(status.get("reason")))
 
     ui_state = get_ui_state()
     status_file = ui_state.get("login_status_file", "")
     log_file = ui_state.get("login_log_file", "")
+    if status_file:
+        st.caption("状态文件: {}".format(status_file))
+    if log_file:
+        st.caption("日志文件: {}".format(log_file))
+        st.text_area("最近日志", value=read_text(log_file)[-4000:], height=220, key="login_log_view")
 
-    if status_file or log_file:
-        st.markdown("### 📋 登录日志与状态")
-        log_cols = st.columns(2)
-        with log_cols[0]:
-            if status_file:
-                st.caption(f"📄 状态文件: `{status_file}`")
-        with log_cols[1]:
-            if log_file:
-                st.caption(f"📝 日志文件: `{log_file}`")
-
-        if log_file:
-            st.text_area("📜 最近日志", value=read_text(log_file)[-4000:], height=220, key="login_log_view")
-
-    st.markdown("### 🛠️ 配置信息")
-    config_cols = st.columns(2)
-    with config_cols[0]:
-        st.caption(f"📂 MCP Profile 目录: `{XHS_PROFILE_DIR}`")
-    with config_cols[1]:
-        st.caption(f"🔒 Cookie 回退文件: `{XHS_COOKIE_FILE}`")
+    st.caption("MCP Profile 目录: {}".format(XHS_PROFILE_DIR))
+    st.caption("Cookie 回退文件: {}".format(XHS_COOKIE_FILE))
 
     profile_url = status.get("data", {}).get("profileUrl") or status.get("profileUrl")
     if profile_url:
-        st.markdown(f"🔗 [查看账号主页]({profile_url})")
-
+        st.markdown("[账号主页]({})".format(profile_url))
     if file_state:
-        with st.expander("📊 详细状态数据", expanded=False):
-            st.json(file_state)
+        st.json(file_state)
 
 
 def show_drafts(dm: DraftManager):
     drafts = dm.list_drafts()
-    st.markdown("## 📝 草稿管理中心")
-
+    st.header("草稿管理")
     if not drafts:
-        st.info("📭 暂无草稿。")
+        st.info("暂无草稿。")
         return
 
-    st.markdown("### 🔍 筛选与搜索")
-    filter_col1, filter_col2, filter_col3, filter_col4 = st.columns(4)
-
-    with filter_col1:
-        status_filter = st.selectbox(
-            "📊 状态筛选",
-            ["全部", "draft", "published", "discarded"],
-            format_func=lambda value: "全部" if value == "全部" else format_status_label(value),
-            key="draft_status_filter",
-        )
-
-    with filter_col2:
-        media_filter = st.selectbox(
-            "🎨 媒体类型",
-            ["全部", "image", "video"],
-            format_func=lambda value: {"全部": "全部", "image": "🖼️ 图文", "video": "🎬 视频"}.get(value, value),
-            key="draft_media_filter",
-        )
-
-    with filter_col3:
-        favorite_filter = st.selectbox("❤️ 收藏筛选", ["全部", "仅收藏", "未收藏"], key="draft_favorite_filter")
-
-    with filter_col4:
-        keyword = st.text_input("🔎 搜索标题或文案", "", key="draft_keyword")
+    status_filter = st.selectbox(
+        "状态筛选",
+        ["全部", "draft", "published", "discarded"],
+        format_func=lambda value: "全部" if value == "全部" else format_status_label(value),
+        key="draft_status_filter",
+    )
+    media_filter = st.selectbox(
+        "媒体类型",
+        ["全部", "image", "video"],
+        format_func=lambda value: {"全部": "全部", "image": "图文", "video": "视频"}.get(value, value),
+        key="draft_media_filter",
+    )
+    favorite_filter = st.selectbox("收藏筛选", ["全部", "仅收藏", "未收藏"], key="draft_favorite_filter")
+    keyword = st.text_input("搜索标题或文案", "", key="draft_keyword")
 
     filtered = []
     for draft in drafts:
@@ -610,10 +552,7 @@ def show_drafts(dm: DraftManager):
             continue
         filtered.append(draft)
 
-    st.info(f"📊 筛选结果: **{len(filtered)}** / {len(drafts)} 个草稿")
-
-    st.markdown("---")
-    st.markdown("### 📋 草稿列表")
+    st.info("筛选结果: {} / {} 个草稿".format(len(filtered), len(drafts)))
 
     for idx, draft in enumerate(filtered):
         post = draft.get("post", {})
@@ -621,109 +560,58 @@ def show_drafts(dm: DraftManager):
         images = collect_post_images(post)
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
-        status_emoji = {"待发布": "⏳", "已发布": "✅", "已丢弃": "🗑️"}.get(status_label, "📋")
-        media_emoji = {"图文": "🖼️", "视频": "🎬"}.get(media_label, "📄")
-
-        with st.expander(
-            f"{status_emoji} {title} | {media_emoji} {media_label} | 📷 {len(images)}张图片",
-            expanded=False,
-        ):
+        with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
             badge_cols = st.columns(4)
-            badge_cols[0].caption(f"💾 收藏: {'✅ 是' if draft.get('favorite') else '○ 否'}")
-            badge_cols[1].caption(f"🔗 来源: {post.get('source') or '未知'}")
-            badge_cols[2].caption(f"✍️ 作者: {post.get('author') or '未知'}")
-            audit_ready = post.get("audit", {}).get("publish_ready")
-            badge_cols[3].caption(f"✅ 审核通过: {'是' if audit_ready else '否'}")
+            badge_cols[0].caption("收藏: {}".format("是" if draft.get("favorite") else "否"))
+            badge_cols[1].caption("来源: {}".format(post.get("source") or "未知"))
+            badge_cols[2].caption("作者: {}".format(post.get("author") or "未知"))
+            badge_cols[3].caption("审核通过: {}".format("是" if post.get("audit", {}).get("publish_ready") else "否"))
+            render_post_tabs(post, "draft_post_{}".format(idx))
 
-            render_post_tabs(post, f"draft_post_{idx}")
-
-            st.markdown("#### ⚡ 操作面板")
             col1, col2, col3 = st.columns(3)
             with col1:
-                if st.button(
-                    "📤 发布到小红书",
-                    key=f"publish_{draft['id']}",
-                    use_container_width=True,
-                ):
+                if st.button("发布到小红书", key="publish_{}".format(draft["id"])):
                     result = publish_draft(dm, draft)
                     if isinstance(result, dict) and result.get("success"):
-                        st.success(f"✅ {result.get('message', '发布成功')}")
-                        st.balloons()
+                        st.success(result.get("message", "发布成功"))
                     else:
-                        st.error(
-                            (result or {}).get("message", "发布失败")
-                            if isinstance(result, dict)
-                            else "发布失败"
-                        )
+                        st.error((result or {}).get("message", "发布失败") if isinstance(result, dict) else "发布失败")
                     st.rerun()
-
             with col2:
-                if st.button(
-                    "⭐ 收藏原贴",
-                    key=f"favorite_{draft['id']}",
-                    use_container_width=True,
-                ):
+                if st.button("收藏原贴", key="favorite_{}".format(draft["id"])):
                     result = favorite_source(dm, draft)
                     if isinstance(result, dict) and result.get("success"):
-                        st.success(f"✅ {result.get('message', '已收藏')}")
+                        st.success(result.get("message", "已收藏"))
                     else:
-                        st.warning(
-                            (result or {}).get("message", "收藏失败")
-                            if isinstance(result, dict)
-                            else "收藏失败"
-                        )
+                        st.warning((result or {}).get("message", "收藏失败") if isinstance(result, dict) else "收藏失败")
                     st.rerun()
-
             with col3:
-                if st.button(
-                    "🗑️ 删除草稿",
-                    key=f"delete_{draft['id']}",
-                    use_container_width=True,
-                ):
+                if st.button("删除草稿", key="delete_{}".format(draft["id"])):
                     dm.delete_draft(draft["id"])
-                    st.success("🗑️ 草稿已删除")
+                    st.success("草稿已删除")
                     st.rerun()
 
 
 def show_crawl_management(dm: DraftManager):
-    st.markdown("## 🕷️ 爬取任务管理")
+    st.header("爬取管理")
     settings = load_crawl_settings()
 
-    st.markdown("### ⚙️ 爬取配置")
-    config_col1, config_col2, config_col3 = st.columns(3)
+    keywords = st.text_input("搜索关键词", settings["keywords"], key="crawl_keywords")
+    max_posts = st.number_input("最大帖子数", min_value=1, max_value=50, value=settings["max_posts"], step=1, key="crawl_max_posts")
+    skip_video = st.checkbox("跳过视频帖", value=settings["skip_video"], key="crawl_skip_video")
 
-    with config_col1:
-        keywords = st.text_input("🔍 搜索关键词", settings["keywords"], key="crawl_keywords")
+    st.caption("当前模式: 关键词 [{}] | 最大帖子数 {} | {}".format(keywords, int(max_posts), "跳过视频" if skip_video else "保留视频"))
 
-    with config_col2:
-        max_posts = st.number_input(
-            "📊 最大帖子数",
-            min_value=1,
-            max_value=50,
-            value=settings["max_posts"],
-            step=1,
-            key="crawl_max_posts",
-        )
-
-    with config_col3:
-        skip_video = st.checkbox("⏭️ 跳过视频帖", value=settings["skip_video"], key="crawl_skip_video")
-
-    st.info(
-        f"📋 当前模式: 关键词 **[{keywords}]** | 最大帖子数 **{int(max_posts)}** | {'⏭️ 跳过视频' if skip_video else '🎬 保留视频'}"
-    )
-
-    st.markdown("#### 🎮 操作控制")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("💾 保存爬取设置", key="save_crawl_settings_btn", use_container_width=True):
+        if st.button("保存爬取设置", key="save_crawl_settings_btn"):
             save_crawl_settings(keywords, int(max_posts), skip_video)
-            st.success("✅ 爬取设置已保存")
+            st.success("爬取设置已保存")
     with col2:
-        if st.button("🚀 开始实时爬取", type="primary", key="start_crawl_btn", use_container_width=True):
+        if st.button("开始实时爬取", type="primary", key="start_crawl_btn"):
             save_crawl_settings(keywords, int(max_posts), skip_video)
             start_crawl(keywords, int(max_posts), skip_video)
-            st.success("✅ 已启动后台爬取任务。")
-            st.balloons()
+            st.success("已启动后台爬取任务。")
 
     ui_state = get_ui_state()
     status_file = ui_state.get("crawl_status_file", "")
@@ -731,499 +619,143 @@ def show_crawl_management(dm: DraftManager):
     payload = read_json(status_file)
 
     if payload:
-        st.markdown("---")
-        st.markdown("### 📈 实时进度监控")
-
         stage = payload.get("stage_label") or payload.get("stage_id") or "初始化"
         current = int(payload.get("current") or 0)
         total = max(1, int(payload.get("total") or 1))
-        progress_value = min(current / total, 1.0) if total > 0 else 0
-        st.progress(progress_value, text=f"当前阶段: **{stage}** ({current}/{total})")
+        st.progress(min(current / total, 1.0), text="当前阶段: {} ({}/{})".format(stage, current, total))
 
         cols = st.columns(6)
-        metrics_data = [
-            ("🔍 候选数", int(payload.get("searched") or 0)),
-            ("📄 补抓详情", int(payload.get("hydrated") or 0)),
-            ("🤖 AI 相关", int(payload.get("ai_related") or 0)),
-            ("🖼️ 媒体处理", int(payload.get("media_processed") or 0)),
-            ("✅ 通过审核", int(payload.get("approved") or 0)),
-            ("❌ 打回数", int(payload.get("rejected") or 0)),
-        ]
-        for idx, (label, value) in enumerate(metrics_data):
-            with cols[idx]:
-                st.metric(label, value, delta=None)
+        cols[0].metric("候选数", int(payload.get("searched") or 0))
+        cols[1].metric("补抓详情", int(payload.get("hydrated") or 0))
+        cols[2].metric("AI 相关", int(payload.get("ai_related") or 0))
+        cols[3].metric("媒体处理", int(payload.get("media_processed") or 0))
+        cols[4].metric("通过审核", int(payload.get("approved") or 0))
+        cols[5].metric("打回数", int(payload.get("rejected") or 0))
 
         if payload.get("last_message"):
-            st.caption(f"💬 {payload.get('last_message')}")
+            st.caption(payload.get("last_message"))
         if payload.get("last_error"):
-            st.error(f"❌ 最近错误: {payload.get('last_error')}")
+            st.error("最近错误: {}".format(payload.get("last_error")))
 
         summary = payload.get("result_summary") or {}
         if summary:
-            st.markdown("#### 📊 结果汇总")
+            st.subheader("结果汇总")
             sum_cols = st.columns(4)
-            summary_metrics = [
-                ("🔍 搜索候选", int(summary.get("searched") or payload.get("searched") or 0)),
-                ("✅ 详情成功", int(summary.get("hydrated_success") or payload.get("hydrated") or 0)),
-                ("🖼️ 媒体成功", int(summary.get("media_processed") or payload.get("media_processed") or 0)),
-                ("📝 最终草稿", int(summary.get("approved_posts") or payload.get("approved") or 0)),
-            ]
-            for idx, (label, value) in enumerate(summary_metrics):
-                with sum_cols[idx]:
-                    st.metric(label, value, delta=None)
-
+            sum_cols[0].metric("搜索候选", int(summary.get("searched") or payload.get("searched") or 0))
+            sum_cols[1].metric("详情成功", int(summary.get("hydrated_success") or payload.get("hydrated") or 0))
+            sum_cols[2].metric("媒体成功", int(summary.get("media_processed") or payload.get("media_processed") or 0))
+            sum_cols[3].metric("最终草稿", int(summary.get("approved_posts") or payload.get("approved") or 0))
             if summary.get("notes"):
                 for note in summary.get("notes", []):
-                    st.write(f"- ℹ️ {note}")
+                    st.write("- {}".format(note))
             if summary.get("keyword_hits"):
-                st.write("**关键词命中:**")
+                st.write("关键词命中:")
                 for item in summary.get("keyword_hits", []):
-                    st.write(f"- 🔑 {item.get('keyword', '')}: {item.get('hits', 0)} 次")
+                    st.write("- {}: {}".format(item.get("keyword", ""), item.get("hits", 0)))
             if summary.get("top_rejection_reasons"):
-                st.write("**主要打回原因:**")
+                st.write("主要打回原因:")
                 for item in summary.get("top_rejection_reasons", []):
-                    st.write(f"- ❌ {item.get('reason', '未说明')}: {item.get('count', 0)} 次")
+                    st.write("- {}: {}".format(item.get("reason", "未说明"), item.get("count", 0)))
     else:
-        st.info("ℹ️ 当前还没有进行中的爬取任务。保存设置后即可启动实时爬取。")
+        st.info("当前还没有进行中的爬取任务。保存设置后即可启动实时爬取。")
 
     if log_file:
-        st.markdown("---")
-        st.markdown("### 📜 实时日志输出")
-        st.text_area("🖥️ 后台输出", value=read_text(log_file)[-6000:], height=280, key="crawl_log_view")
+        st.subheader("实时日志")
+        st.text_area("后台输出", value=read_text(log_file)[-6000:], height=280, key="crawl_log_view")
 
     latest_drafts = dm.list_drafts()[:5]
     if latest_drafts:
-        st.markdown("---")
-        st.markdown("### 🕐 最近生成的草稿")
+        st.subheader("最近生成的草稿")
         for index, draft in enumerate(latest_drafts):
             post = draft.get("post", {})
-            status_emoji = {"待发布": "⏳", "已发布": "✅", "已丢弃": "🗑️"}.get(format_status_label(draft.get("status")), "📋")
-            media_emoji = {"图文": "🖼️", "视频": "🎬"}.get(format_media_label(post.get("media_type")), "📄")
-            st.write(f"{index + 1}. {status_emoji} **{post.get('title', '无标题')}** | {format_status_label(draft.get('status'))} | {media_emoji} {format_media_label(post.get('media_type'))}")
+            st.write("- {} | {} | {}".format(post.get("title") or "无标题", format_status_label(draft.get("status")), format_media_label(post.get("media_type"))))
 
 
 def show_settings():
-    st.markdown("## ⚙️ 系统设置")
+    st.header("设置")
     settings = load_ai_settings()
     ollama_available, ollama_message, detected_model = check_ollama_available()
 
-    st.markdown("### 🤖 模型路由配置")
+    st.subheader("模型路由")
     mode_options = ["ollama", "deepseek", "auto", "openai", "local"]
     labels = {
-        "content_analyzer_mode": "📊 内容分析",
-        "content_rewriter_mode": "✍️ 内容润色",
-        "content_auditor_mode": "🔍 内容审核",
-        "image_processing_mode": "🖼️ 图片理解",
-        "video_transcription_mode": "🎬 视频转写",
+        "content_analyzer_mode": "内容分析",
+        "content_rewriter_mode": "内容润色",
+        "content_auditor_mode": "内容审核",
+        "image_processing_mode": "图片理解",
+        "video_transcription_mode": "视频转写",
     }
 
     updated = {}
-    label_cols = st.columns(3)
-    for idx, (key, label) in enumerate(labels.items()):
-        with label_cols[idx % 3]:
-            current = settings.get(key, DEFAULT_AI_RUNTIME_SETTINGS.get(key, "deepseek"))
-            index = mode_options.index(current) if current in mode_options else 0
-            updated[key] = st.selectbox(
-                label,
-                mode_options,
-                index=index,
-                format_func=format_mode_label,
-                key=f"setting_{key}",
-            )
+    for key, label in labels.items():
+        current = settings.get(key, DEFAULT_AI_RUNTIME_SETTINGS.get(key, "deepseek"))
+        index = mode_options.index(current) if current in mode_options else 0
+        updated[key] = st.selectbox(
+            label,
+            mode_options,
+            index=index,
+            format_func=format_mode_label,
+            key="setting_{}".format(key),
+        )
 
-    save_col1, save_col2 = st.columns([1, 4])
-    with save_col1:
-        if st.button(
-            "💾 保存模型设置", type="primary", key="save_ai_settings_btn", use_container_width=True
-        ):
-            save_ai_settings(updated)
-            st.success("✅ 模型设置已保存")
-            settings = load_ai_settings()
+    if st.button("保存模型设置", type="primary", key="save_ai_settings_btn"):
+        save_ai_settings(updated)
+        st.success("模型设置已保存")
+        settings = load_ai_settings()
 
     st.markdown("---")
-
-    st.markdown("### 📡 服务状态监控")
+    st.subheader("服务状态")
     col1, col2, col3 = st.columns(3)
-    with col1:
-        ollama_status = "🟢 可用" if ollama_available else "🔴 不可用"
-        st.metric("⚙️ Ollama 状态", ollama_status)
-    with col2:
-        st.metric("🌐 默认地址", OLLAMA_BASE_URL)
-    with col3:
-        st.metric("🤖 默认模型", detected_model or OLLAMA_MODEL)
-
-    if ollama_message:
-        st.caption(f"ℹ️ {ollama_message}")
+    col1.metric("Ollama 状态", "可用" if ollama_available else "不可用")
+    col2.metric("默认地址", OLLAMA_BASE_URL)
+    col3.metric("默认模型", detected_model or OLLAMA_MODEL)
+    st.caption(ollama_message)
 
     key_cols = st.columns(3)
-    with key_cols[0]:
-        deepseek_status = "✅ 已配置" if has_valid_deepseek_api_key() else "❌ 未配置"
-        st.metric("🔑 DeepSeek Key", deepseek_status)
-    with key_cols[1]:
-        openai_status = "✅ 已配置" if has_valid_openai_api_key() else "❌ 未配置"
-        st.metric("🔑 OpenAI Key", openai_status)
-    with key_cols[2]:
-        gemini_status = "✅ 已配置" if has_valid_gemini_api_key() else "❌ 未配置"
-        st.metric("🔑 Gemini Key", gemini_status)
+    key_cols[0].metric("DeepSeek Key", "已配置" if has_valid_deepseek_api_key() else "未配置")
+    key_cols[1].metric("OpenAI Key", "已配置" if has_valid_openai_api_key() else "未配置")
+    key_cols[2].metric("Gemini Key", "已配置" if has_valid_gemini_api_key() else "未配置")
+
+    st.subheader("当前生效策略")
+    for key, label in labels.items():
+        st.write("- {}: {}".format(label, format_mode_label(settings.get(key))))
 
     st.markdown("---")
-
-    st.markdown("### 📋 当前生效策略")
-    strategy_cols = st.columns(2)
-    for idx, (key, label) in enumerate(labels.items()):
-        with strategy_cols[idx % 2]:
-            current_mode = format_mode_label(settings.get(key))
-            st.info(f"- **{label}**: {current_mode}")
-
-    st.markdown("---")
-
-    st.markdown("### ℹ️ 使用说明")
-    help_items = [
-        "💡 ChatGPT Plus 会员不能直接替代 API Key；脚本调用 DeepSeek、OpenAI、Gemini 仍需要各自的 API Key。",
-        "🔄 如果选择**「自动选择」**，系统会优先尝试 Ollama，其次 DeepSeek，再其次 OpenAI，最后回退到本地模式。",
-        f"📂 当前模型设置文件: `{XHS_AI_SETTINGS_FILE}`",
-        f"📂 当前爬取设置文件: `{XHS_CRAWL_SETTINGS_FILE}`",
-    ]
-    for item in help_items:
-        st.write(item)
+    st.subheader("说明")
+    st.write("- ChatGPT Plus 会员不能直接替代 API Key；脚本调用 DeepSeek、OpenAI、Gemini 仍需要各自的 API Key。")
+    st.write("- 如果选择“自动选择”，系统会优先尝试 Ollama，其次 DeepSeek，再其次 OpenAI，最后回退到本地模式。")
+    st.write("- 当前模型设置文件: {}".format(XHS_AI_SETTINGS_FILE))
+    st.write("- 当前爬取设置文件: {}".format(XHS_CRAWL_SETTINGS_FILE))
 
 
 def show_about():
-    st.markdown("## ℹ️ 关于本项目")
-
-    st.markdown(
-        """
-        ### 📕 小红书 Agent 控制台
-
-        这是当前项目的**稳定版控制台入口**，负责串联登录、抓取、草稿查看与基础设置。
-
-        #### ✨ 核心特性
-
-        - 🔐 **登录授权管理** - 安全的小红书账号登录与状态监控
-        - 🕷️ **智能爬取系统** - 自动抓取 AIGC 相关内容并进行 AI 分析
-        - 📝 **草稿管理中心** - 完整的草稿生命周期管理（创建、审核、发布）
-        - ⚙️ **灵活的 AI 配置** - 支持多种 AI 模型后端（Ollama/DeepSeek/OpenAI/Gemini）
-
-        #### 🎯 设计理念
-
-        当前页面优先保证：
-        - ✅ **中文可读性** - 全中文界面，符合国内用户习惯
-        - ✅ **结构稳定性** - 清晰的模块划分，易于维护
-        - ✅ **核心功能可用** - 聚焦主要工作流，避免功能冗余
-
-        #### 🚀 后续规划
-
-        后续可以继续在这份干净版本上补回更复杂的高级交互，包括：
-
-        - 📊 更丰富的数据可视化图表
-        - 🔔 实时消息通知系统
-        - 📱 移动端响应式适配
-        - 🎨 更多主题定制选项
-        - 📈 使用统计与分析面板
-
-        ---
-        *Made with ❤️ using Streamlit*
-        """
-    )
+    st.header("关于")
+    st.write("这是当前项目的稳定版控制台入口，负责串联登录、抓取、草稿查看与基础设置。")
+    st.write("当前页面优先保证中文可读、结构稳定、核心功能可用，后续可以继续在这份干净版本上补回更复杂的高级交互。")
 
 
 def main():
-    st.set_page_config(
-        page_title=APP_TITLE,
-        layout="wide",
-        page_icon="📕",
-        initial_sidebar_state="expanded",
-    )
-
-    custom_css = """
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-        * {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-        }
-
-        .stApp {
-            background: linear-gradient(135deg, #FFF5F7 0%, #FFFFFF 50%, #F8FAFF 100%);
-            min-height: 100vh;
-        }
-
-        .main .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-            max-width: 1400px;
-        }
-
-        h1 {
-            color: #FF2442 !important;
-            font-weight: 700 !important;
-            font-size: 2.8rem !important;
-            text-align: center;
-            margin-bottom: 1.5rem;
-            text-shadow: 2px 2px 4px rgba(255, 36, 66, 0.1);
-            letter-spacing: -0.02em;
-        }
-
-        h2 {
-            color: #1F2329 !important;
-            font-weight: 600 !important;
-            font-size: 1.6rem !important;
-            margin-top: 1.5rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 3px solid #FF2442;
-            display: inline-block;
-        }
-
-        h3 {
-            color: #2C3E50 !important;
-            font-weight: 600 !important;
-            font-size: 1.25rem !important;
-        }
-
-        [data-testid="stMetric"] {
-            background-color: white;
-            border: 1px solid #E8ECF0;
-            border-radius: 12px;
-            padding: 1rem 1.2rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            transition: all 0.3s ease;
-        }
-
-        [data-testid="stMetric"]:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(255, 36, 66, 0.15);
-            border-color: #FF2442;
-        }
-
-        [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #FFFFFF 0%, #FFF5F7 100%) !important;
-            border-right: 2px solid #FFE5EA;
-        }
-
-        [data-testid="stSidebar"] [data-testid="stRadio"] > label {
-            background-color: white;
-            border: 2px solid transparent;
-            border-radius: 10px;
-            padding: 12px 16px;
-            margin: 6px 0;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        [data-testid="stSidebar"] [data-testid="stRadio"] > label:hover {
-            background-color: #FFF0F3;
-            border-color: #FFB8C6;
-            transform: translateX(4px);
-        }
-
-        [data-testid="stSidebar"] [data-testid="stRadio"] > label[data-baseweb="radio-checked"] {
-            background: linear-gradient(135deg, #FF2442 0%, #FF6B81 100%);
-            color: white;
-            border-color: #FF2442;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(255, 36, 66, 0.3);
-        }
-
-        .stButton > button {
-            border-radius: 10px !important;
-            font-weight: 600 !important;
-            transition: all 0.3s ease !important;
-            border: none !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-        }
-
-        .stButton > button[kind="primary"] {
-            background: linear-gradient(135deg, #FF2442 0%, #FF6B81 100%) !important;
-            color: white !important;
-        }
-
-        .stButton > button[kind="primary"]:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 20px rgba(255, 36, 66, 0.35) !important;
-        }
-
-        .stButton > button:not([kind="primary"]) {
-            background-color: white !important;
-            color: #FF2442 !important;
-            border: 2px solid #FF2442 !important;
-        }
-
-        .stButton > button:not([kind="primary"]):hover {
-            background-color: #FFF0F3 !important;
-            transform: translateY(-2px) !important;
-        }
-
-        [data-testid="stExpander"] {
-            background-color: white;
-            border: 1px solid #E8ECF0;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-            margin: 8px 0;
-            transition: all 0.3s ease;
-        }
-
-        [data-testid="stExpander"]:hover {
-            border-color: #FFB8C6;
-            box-shadow: 0 4px 16px rgba(255, 36, 66, 0.1);
-        }
-
-        [data-testid="stTabs"] [role="tablist"] {
-            background-color: #F7F8FA;
-            border-radius: 10px;
-            padding: 6px;
-            gap: 4px;
-        }
-
-        [data-testid="stTabs"] [role="tab"] {
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
-            background-color: #FF2442 !important;
-            color: white !important;
-        }
-
-        [data-testid="stSelectbox"] > div > div {
-            background-color: white;
-            border-radius: 8px;
-            border: 2px solid #E8ECF0;
-        }
-
-        [data-testid="stTextInput"] input {
-            border-radius: 8px;
-            border: 2px solid #E8ECF0;
-            transition: all 0.3s ease;
-        }
-
-        [data-testid="stTextInput"] input:focus {
-            border-color: #FF2442 !important;
-            box-shadow: 0 0 0 3px rgba(255, 36, 66, 0.1) !important;
-        }
-
-        [data-testid="stTextArea"] textarea {
-            border-radius: 8px;
-            border: 2px solid #E8ECF0;
-            transition: all 0.3s ease;
-        }
-
-        [data-testid="stTextArea"] textarea:focus {
-            border-color: #FF2442 !important;
-            box-shadow: 0 0 0 3px rgba(255, 36, 66, 0.1) !important;
-        }
-
-        [data-testid="stCheckbox"] label {
-            background-color: white;
-            border-radius: 8px;
-            padding: 8px 12px;
-        }
-
-        [data-testid="stNumberInput"] input {
-            border-radius: 8px;
-            border: 2px solid #E8ECF0;
-        }
-
-        [data-testid="stImage"] img {
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-        }
-
-        [data-testid="stImage"] img:hover {
-            transform: scale(1.02);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-        }
-
-        .stProgress > div > div > div > div {
-            background: linear-gradient(90deg, #FF2442 0%, #FF6B81 100%);
-            border-radius: 20px;
-        }
-
-        .stInfo {
-            background: linear-gradient(135deg, #E8F4FD 0%, #F0F7FF 100%) !important;
-            border-left: 4px solid #1890FF !important;
-            border-radius: 10px !important;
-            padding: 1rem 1.2rem !important;
-        }
-
-        .stSuccess {
-            background: linear-gradient(135deg, #F0FFF4 0%, #E8FDF0 100%) !important;
-            border-left: 4px solid #52C41A !important;
-            border-radius: 10px !important;
-            padding: 1rem 1.2rem !important;
-        }
-
-        .stWarning {
-            background: linear-gradient(135deg, #FFFBE6 0%, #FFF9E6 100%) !important;
-            border-left: 4px solid #FAAD14 !important;
-            border-radius: 10px !important;
-            padding: 1rem 1.2rem !important;
-        }
-
-        .stError {
-            background: linear-gradient(135deg, #FFF1F0 0%, #FFECEA 100%) !important;
-            border-left: 4px solid #FF2442 !important;
-            border-radius: 10px !important;
-            padding: 1rem 1.2rem !important;
-        }
-
-        hr {
-            border: none;
-            height: 2px;
-            background: linear-gradient(90deg, transparent 0%, #FFE5EA 50%, transparent 100%);
-            margin: 2rem 0;
-        }
-
-        .stCaption {
-            color: #8C959F !important;
-            font-size: 0.9rem !important;
-        }
-
-        code {
-            background-color: #F7F8FA !important;
-            border-radius: 6px !important;
-            padding: 2px 8px !important;
-            color: #FF2442 !important;
-            font-family: 'Monaco', 'Consolas', monospace !important;
-        }
-
-        pre {
-            background-color: #1F2329 !important;
-            border-radius: 10px !important;
-            padding: 1rem !important;
-            overflow-x: auto;
-        }
-    </style>
-    """
-
-    st.markdown(custom_css, unsafe_allow_html=True)
+    st.set_page_config(page_title=APP_TITLE, layout="wide")
+    st.title(APP_TITLE)
 
     dm = DraftManager()
     with st.sidebar:
-        st.markdown("### 🎯 导航菜单")
-        page = st.radio(
-            "页面选择",
-            ["📊 仪表盘", "🔐 登录授权", "📝 草稿管理", "🕷️ 爬取管理", "⚙️ 设置", "ℹ️ 关于"],
-            key="sidebar_page",
-            label_visibility="collapsed",
-        )
-        st.markdown("---")
-        if st.button("🔄 刷新页面", key="sidebar_refresh", use_container_width=True):
+        page = st.radio("页面", ["仪表盘", "登录授权", "草稿管理", "爬取管理", "设置", "关于"], key="sidebar_page")
+        if st.button("刷新页面", key="sidebar_refresh"):
             st.rerun()
 
-    page_map = {
-        "📊 仪表盘": show_dashboard,
-        "🔐 登录授权": show_login_page,
-        "📝 草稿管理": show_drafts,
-        "🕷️ 爬取管理": show_crawl_management,
-        "⚙️ 设置": show_settings,
-        "ℹ️ 关于": show_about,
-    }
-
-    if page in page_map:
-        page_map[page](dm)
-
+    if page == "仪表盘":
+        show_dashboard(dm)
+    elif page == "登录授权":
+        show_login_page()
+    elif page == "草稿管理":
+        show_drafts(dm)
+    elif page == "爬取管理":
+        show_crawl_management(dm)
+    elif page == "设置":
+        show_settings()
+    else:
+        show_about()
 
 
 if __name__ == "__main__":
