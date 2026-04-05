@@ -66,6 +66,15 @@ APP_CSS = """
         color: var(--ink-0);
         font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
     }
+    .stApp p, .stApp li, .stApp label, .stApp span, .stApp div {
+        color: inherit;
+    }
+    .stApp h1, .stApp h2, .stApp h3, .stApp h4 {
+        color: var(--ink-0) !important;
+    }
+    .stCaptionContainer, [data-testid="stCaptionContainer"] {
+        color: #475569 !important;
+    }
     .stApp > header {
         background: transparent;
     }
@@ -108,6 +117,17 @@ APP_CSS = """
         border: 1px solid var(--line-0);
         box-shadow: var(--shadow-1);
         animation: softRise 0.45s ease both;
+        min-height: 116px;
+    }
+    div[data-testid="stMetric"] label[data-testid="stMetricLabel"] p {
+        font-size: 0.84rem !important;
+        color: #475569 !important;
+        font-weight: 700 !important;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        font-size: 1.42rem !important;
+        color: #0f172a !important;
+        font-weight: 800 !important;
     }
     div[data-testid="stExpander"] {
         border-radius: 20px;
@@ -230,6 +250,7 @@ APP_CSS = """
         font-size: 1.05rem;
         font-weight: 700;
         color: var(--ink-0);
+        line-height: 1.45;
     }
     .cover-card-sub {
         margin: 0;
@@ -242,19 +263,23 @@ APP_CSS = """
         background: rgba(255, 255, 255, 0.9);
         border: 1px solid var(--line-0);
         box-shadow: var(--shadow-1);
-        min-height: 92px;
+        min-height: 116px;
+        height: 100%;
     }
     .summary-card-value {
         display: block;
-        font-size: 1.28rem;
+        font-size: 1.12rem;
         font-weight: 800;
         color: var(--ink-0);
         margin-bottom: 0.18rem;
+        line-height: 1.35;
+        word-break: break-word;
     }
     .summary-card-label {
         color: var(--ink-1);
         font-size: 0.86rem;
         line-height: 1.4;
+        word-break: break-word;
     }
     .action-strip {
         display: flex;
@@ -591,6 +616,18 @@ def format_media_label(media_type: str) -> str:
     return "视频" if str(media_type or "").lower() == "video" else "图文"
 
 
+def status_icon(status: str) -> str:
+    return {
+        "draft": "🕒",
+        "published": "✅",
+        "discarded": "🗑️",
+    }.get(str(status or "").lower(), "📄")
+
+
+def media_icon(media_type: str) -> str:
+    return "🎬" if str(media_type or "").lower() == "video" else "🖼️"
+
+
 def start_login():
     publisher = XiaohongshuPublisher(headless=False)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -874,9 +911,21 @@ def show_dashboard(dm: DraftManager):
         images = collect_post_images(post)
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
-        with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
+        title_line = "{} {} | {} {} | {}".format(
+            media_icon(post.get("media_type", "image")),
+            title,
+            status_icon(draft.get("status", "unknown")),
+            status_label,
+            media_label,
+        )
+        with st.expander("{} | {}张图片".format(title_line, len(images)), expanded=False):
             render_cover_card(
-                "{} {}".format("🎬" if post.get("media_type") == "video" else "🖼️", title),
+                "{} {}  {} {}".format(
+                    media_icon(post.get("media_type", "image")),
+                    title,
+                    status_icon(draft.get("status", "unknown")),
+                    status_label,
+                ),
                 "{} | {} | 作者 {}".format(status_label, media_label, post.get("author") or "未知"),
                 [
                     ("{}".format(status_label), "green" if draft.get("status") == "published" else "slate"),
@@ -987,9 +1036,21 @@ def show_drafts(dm: DraftManager):
         images = collect_post_images(post)
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
-        with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
+        title_line = "{} {} | {} {} | {}".format(
+            media_icon(post.get("media_type", "image")),
+            title,
+            status_icon(draft.get("status", "unknown")),
+            status_label,
+            media_label,
+        )
+        with st.expander("{} | {}张图片".format(title_line, len(images)), expanded=False):
             render_cover_card(
-                "{} {}".format("🎬" if post.get("media_type") == "video" else "🖼️", title),
+                "{} {}  {} {}".format(
+                    media_icon(post.get("media_type", "image")),
+                    title,
+                    status_icon(draft.get("status", "unknown")),
+                    status_label,
+                ),
                 "{} | {} | {}".format(status_label, media_label, post.get("source") or "未知来源"),
                 [
                     ("收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else "slate"),
