@@ -236,27 +236,25 @@ APP_CSS = """
         color: var(--ink-1);
         font-size: 0.9rem;
     }
-    .summary-ribbon {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.8rem;
-        margin: 0.2rem 0 1rem 0;
-    }
-    .summary-pill {
+    .summary-card {
         border-radius: 18px;
         padding: 0.95rem 1rem;
-        background: rgba(255, 255, 255, 0.88);
+        background: rgba(255, 255, 255, 0.9);
         border: 1px solid var(--line-0);
         box-shadow: var(--shadow-1);
+        min-height: 92px;
     }
-    .summary-pill strong {
+    .summary-card-value {
         display: block;
-        font-size: 1.35rem;
+        font-size: 1.28rem;
+        font-weight: 800;
         color: var(--ink-0);
+        margin-bottom: 0.18rem;
     }
-    .summary-pill span {
+    .summary-card-label {
         color: var(--ink-1);
         font-size: 0.86rem;
+        line-height: 1.4;
     }
     .action-strip {
         display: flex;
@@ -349,12 +347,13 @@ def render_hero(title: str, subtitle: str, icon: str = ""):
     )
 
 
-def render_section(title: str, subtitle: str = ""):
+def render_section(title: str, subtitle: str = "", icon: str = ""):
     extra = f"<div class='small-note'>{subtitle}</div>" if subtitle else ""
+    icon_html = f"{icon} " if icon else ""
     st.markdown(
         f"""
         <div class="section-shell">
-            <h2>{title}</h2>
+            <h2>{icon_html}{title}</h2>
             {extra}
         </div>
         """,
@@ -400,17 +399,20 @@ def render_toolbar(items: list[str]):
 
 
 def render_summary_ribbon(items: list[tuple[str, str]]):
-    blocks = "".join(
-        """
-        <div class="summary-pill">
-            <strong>{}</strong>
-            <span>{}</span>
-        </div>
-        """.format(value, label)
-        for label, value in items
-    )
-    if blocks:
-        st.markdown(f"<div class='summary-ribbon'>{blocks}</div>", unsafe_allow_html=True)
+    if not items:
+        return
+    cols = st.columns(len(items))
+    for col, (label, value) in zip(cols, items):
+        with col:
+            st.markdown(
+                """
+                <div class="summary-card">
+                    <span class="summary-card-value">{}</span>
+                    <span class="summary-card-label">{}</span>
+                </div>
+                """.format(value, label),
+                unsafe_allow_html=True,
+            )
 
 
 def render_sidebar_brand():
