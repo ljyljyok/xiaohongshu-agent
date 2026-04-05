@@ -446,71 +446,118 @@ def show_dashboard(dm: DraftManager):
     pending = sum(1 for d in drafts if d.get("status") == "draft")
     approved = sum(1 for d in drafts if d.get("post", {}).get("audit", {}).get("publish_ready"))
 
-    st.header("仪表盘")
+    st.markdown("## 📊 数据概览")
+
     col1, col2, col3, col4, col5 = st.columns(5)
-    col1.metric("草稿总数", len(drafts))
-    col2.metric("待发布", pending)
-    col3.metric("图文帖", image_posts)
-    col4.metric("视频帖", video_posts)
-    col5.metric("审核通过", approved)
-    st.caption("已收藏草稿: {}".format(favorites))
+    with col1:
+        st.metric("📋 草稿总数", len(drafts), delta=None)
+    with col2:
+        st.metric("⏳ 待发布", pending, delta=None)
+    with col3:
+        st.metric("🖼️ 图文帖", image_posts, delta=None)
+    with col4:
+        st.metric("🎬 视频帖", video_posts, delta=None)
+    with col5:
+        st.metric("✅ 审核通过", approved, delta=None)
+
+    with st.expander(f"❤️ 已收藏草稿: {favorites}", expanded=False):
+        if favorites > 0:
+            favorite_drafts = [d for d in drafts if d.get("favorite")]
+            for draft in favorite_drafts[:5]:
+                post = draft.get("post", {})
+                st.write(f"📌 {post.get('title', '无标题')} | {format_status_label(draft.get('status', '未知'))}")
+        else:
+            st.info("暂无收藏的草稿")
+
     st.markdown("---")
 
     if not drafts:
-        st.info("暂无草稿，请先执行抓取流程。")
+        st.info("📭 暂无草稿，请先执行抓取流程。")
         st.code("python scripts/crawl_latest_aigc.py")
         return
 
-    st.subheader("最新草稿")
+    st.markdown("### 🕐 最新草稿预览")
     for idx, draft in enumerate(drafts[:8]):
         post = draft.get("post", {})
         title = post.get("title") or "无标题"
         images = collect_post_images(post)
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
-        with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
+        status_emoji = {"待发布": "⏳", "已发布": "✅", "已丢弃": "🗑️"}.get(status_label, "📋")
+        media_emoji = {"图文": "🖼️", "视频": "🎬"}.get(media_label, "📄")
+
+        with st.expander(
+            f"{status_emoji} {title} | {media_emoji} {media_label} | 📷 {len(images)}张图片",
+            expanded=False,
+        ):
             info_cols = st.columns(3)
-            info_cols[0].caption("收藏状态: {}".format("已收藏" if draft.get("favorite") else "未收藏"))
-            info_cols[1].caption("来源: {}".format(post.get("source") or "未知"))
-            info_cols[2].caption("作者: {}".format(post.get("author") or "未知"))
-            render_post_tabs(post, "dashboard_post_{}".format(idx))
+            info_cols[0].caption(f"💾 收藏状态: {'✅ 已收藏' if draft.get('favorite') else '○ 未收藏'}")
+            info_cols[1].caption(f"🔗 来源: {post.get('source') or '未知'}")
+            info_cols[2].caption(f"✍️ 作者: {post.get('author') or '未知'}")
+            render_post_tabs(post, f"dashboard_post_{idx}")
 
 
 def show_login_page():
-    st.header("登录授权")
+    st.markdown("## 🔐 登录授权管理")
     status, file_state = get_login_state()
     state_label = LOGIN_STATUS_LABELS.get(status.get("state"), format_status_label(status.get("state")))
 
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("登录状态", state_label)
-    col2.metric("后端", "MCP")
-    col3.metric("Profile 目录", "已存在" if os.path.isdir(XHS_PROFILE_DIR) else "未创建")
-    col4.metric("Cookie 回退", "未生成（正常）" if not os.path.exists(XHS_COOKIE_FILE) else "已存在")
+    with col1:
+        st.metric("🔑 登录状态", state_label)
+    with col2:
+        st.metric("⚙️ 后端", "MCP")
+    with col3:
+        profile_exists = os.path.isdir(XHS_PROFILE_DIR)
+        st.metric("📁 Profile 目录", "✅ 已存在" if profile_exists else "❌ 未创建")
+    with col4:
+        cookie_exists = os.path.exists(XHS_COOKIE_FILE)
+        st.metric("🍪 Cookie 回退", "⚠️ 已存在" if cookie_exists else "✅ 未生成（正常）")
 
-    if st.button("启动浏览器登录", type="primary", key="start_login_btn"):
-        start_login()
-        st.success("已启动登录流程，请在浏览器中完成登录。")
+    st.markdown("---")
 
-    if status.get("reason"):
-        st.caption("状态说明: {}".format(status.get("reason")))
+    c1, c2 = st.columns([1, 3])
+    with c1:
+        if st.button("🚀 启动浏览器登录", type="primary", key="start_login_btn", use_container_width=True):
+            start_login()
+            st.success("✅ 已启动登录流程，请在浏览器中完成登录。")
+            st.balloons()
+
+    with c2:
+        if status.get("reason"):
+            st.info(f"ℹ️ 状态说明: {status.get('reason')}")
 
     ui_state = get_ui_state()
     status_file = ui_state.get("login_status_file", "")
     log_file = ui_state.get("login_log_file", "")
-    if status_file:
-        st.caption("状态文件: {}".format(status_file))
-    if log_file:
-        st.caption("日志文件: {}".format(log_file))
-        st.text_area("最近日志", value=read_text(log_file)[-4000:], height=220, key="login_log_view")
 
-    st.caption("MCP Profile 目录: {}".format(XHS_PROFILE_DIR))
-    st.caption("Cookie 回退文件: {}".format(XHS_COOKIE_FILE))
+    if status_file or log_file:
+        st.markdown("### 📋 登录日志与状态")
+        log_cols = st.columns(2)
+        with log_cols[0]:
+            if status_file:
+                st.caption(f"📄 状态文件: `{status_file}`")
+        with log_cols[1]:
+            if log_file:
+                st.caption(f"📝 日志文件: `{log_file}`")
+
+        if log_file:
+            st.text_area("📜 最近日志", value=read_text(log_file)[-4000:], height=220, key="login_log_view")
+
+    st.markdown("### 🛠️ 配置信息")
+    config_cols = st.columns(2)
+    with config_cols[0]:
+        st.caption(f"📂 MCP Profile 目录: `{XHS_PROFILE_DIR}`")
+    with config_cols[1]:
+        st.caption(f"🔒 Cookie 回退文件: `{XHS_COOKIE_FILE}`")
 
     profile_url = status.get("data", {}).get("profileUrl") or status.get("profileUrl")
     if profile_url:
-        st.markdown("[账号主页]({})".format(profile_url))
+        st.markdown(f"🔗 [查看账号主页]({profile_url})")
+
     if file_state:
-        st.json(file_state)
+        with st.expander("📊 详细状态数据", expanded=False):
+            st.json(file_state)
 
 
 def show_drafts(dm: DraftManager):
