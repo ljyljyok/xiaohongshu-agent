@@ -4,6 +4,7 @@
 import os
 import re
 import sys
+import json
 from typing import Iterable, List
 
 from config.config import get_ai_runtime_mode
@@ -124,10 +125,7 @@ class ContentAnalyzer:
             if clean_response.startswith("```"):
                 lines = clean_response.splitlines()
                 clean_response = "\n".join(lines[1:-1]).strip()
-
-            import json
-
-            ai_result = json.loads(clean_response)
+            ai_result = self._parse_ai_json(clean_response)
             base_result.update(
                 {
                     "is_ai_related": bool(ai_result.get("is_ai_related", True)),
@@ -144,6 +142,19 @@ class ContentAnalyzer:
         except Exception as exc:
             print("[WARNING] AI analysis failed, fallback to local mode: {}".format(str(exc)[:100]))
             return None
+
+    def _parse_ai_json(self, text: str):
+        raw = str(text or "").strip()
+        if not raw:
+            raise ValueError("empty ai response")
+        try:
+            return json.loads(raw)
+        except Exception:
+            start = raw.find("{")
+            end = raw.rfind("}")
+            if start != -1 and end != -1 and end > start:
+                return json.loads(raw[start : end + 1])
+        raise ValueError("no valid json object found in ai response")
 
     def _analyze_locally(self, content, base_result):
         content_lower = str(content).lower()
