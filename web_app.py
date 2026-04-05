@@ -595,6 +595,12 @@ def render_images(images: list[str], key_prefix: str):
             st.image(image_path, caption=os.path.basename(image_path), width="stretch")
 
 
+def render_cover_preview(images: list[str], key_prefix: str):
+    if not images:
+        return
+    st.image(images[0], caption="封面预览", width="stretch")
+
+
 def render_source(post: dict):
     st.markdown("**原贴出处**")
     st.write("作者: {}".format(post.get("author") or "未知"))
@@ -801,12 +807,7 @@ def show_dashboard(dm: DraftManager):
                 "图片 {} 张".format(len(images)),
                 "审核 {}".format("通过" if post.get("audit", {}).get("publish_ready") else "待确认"),
             ])
-            render_badges([
-                ("{}".format(status_label), "green" if draft.get("status") == "published" else ""),
-                ("{}".format(media_label), "orange" if post.get("media_type") == "video" else ""),
-                ("已收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else ""),
-            ])
-            st.caption("来源: {} | 作者: {}".format(post.get("source") or "未知", post.get("author") or "未知"))
+            render_cover_preview(images, "dashboard_cover_{}".format(idx))
             render_post_tabs(post, "dashboard_post_{}".format(idx))
 
 
@@ -913,15 +914,10 @@ def show_drafts(dm: DraftManager):
                 "图片 {} 张".format(len(images)),
                 "原贴 {}".format("已收藏" if post.get("source_favorited") else "未收藏"),
             ])
-            render_badges([
-                ("收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else ""),
-                ("通过审核" if post.get("audit", {}).get("publish_ready") else "待审核", "green" if post.get("audit", {}).get("publish_ready") else "orange"),
-                ("{}".format(media_label), "orange" if post.get("media_type") == "video" else ""),
-            ])
-            st.caption("来源: {} | 作者: {}".format(post.get("source") or "未知", post.get("author") or "未知"))
+            render_cover_preview(images, "draft_cover_{}".format(idx))
             render_post_tabs(post, "draft_post_{}".format(idx))
 
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3 = st.columns([1.1, 1.1, 1])
             with col1:
                 if st.button("发布到小红书", key="publish_{}".format(draft["id"])):
                     result = publish_draft(dm, draft)
