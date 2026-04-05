@@ -44,6 +44,104 @@ APP_TITLE = "小红书 Agent 控制台"
 CRAWL_SCRIPT = os.path.join(PROJECT_ROOT, "scripts", "crawl_latest_aigc.py")
 UI_SETTINGS_FILE = os.path.join(XHS_STATE_DIR, "ui_runtime_state.json")
 
+APP_CSS = """
+<style>
+    .stApp {
+        background:
+            radial-gradient(circle at top left, rgba(97, 119, 255, 0.12), transparent 28%),
+            radial-gradient(circle at top right, rgba(255, 122, 89, 0.08), transparent 24%),
+            linear-gradient(180deg, #f8fafc 0%, #f3f6fb 100%);
+    }
+    .stApp > header {
+        background: transparent;
+    }
+    section[data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #101827 0%, #0f172a 100%);
+        color: #e5e7eb;
+    }
+    section[data-testid="stSidebar"] .stRadio label,
+    section[data-testid="stSidebar"] .stButton button,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] span {
+        color: #e5e7eb !important;
+    }
+    div[data-testid="stMetric"] {
+        border-radius: 18px;
+        padding: 1rem 1rem 0.75rem 1rem;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+    div[data-testid="stExpander"] {
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.05);
+        margin-bottom: 0.75rem;
+    }
+    div[data-testid="stTabs"] {
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.88);
+        padding: 0.25rem 0.5rem 0.5rem 0.5rem;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+    }
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 2rem;
+    }
+    .hero-banner {
+        border-radius: 24px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1rem;
+        color: #0f172a;
+        background:
+            linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(236, 72, 153, 0.08)),
+            rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+    }
+    .hero-banner h1 {
+        margin: 0 0 0.25rem 0;
+        font-size: 2rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+    .hero-banner p {
+        margin: 0;
+        color: #334155;
+        font-size: 0.98rem;
+    }
+    .soft-card {
+        border-radius: 18px;
+        padding: 0.9rem 1rem;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+    }
+    .small-note {
+        color: #64748b;
+        font-size: 0.92rem;
+    }
+</style>
+"""
+
+
+def apply_theme():
+    st.markdown(APP_CSS, unsafe_allow_html=True)
+
+
+def render_hero(title: str, subtitle: str):
+    st.markdown(
+        """
+        <div class="hero-banner">
+            <h1>{}</h1>
+            <p>{}</p>
+        </div>
+        """.format(title, subtitle),
+        unsafe_allow_html=True,
+    )
+
 
 def load_json(path: str, default):
     if not path or not os.path.exists(path):
@@ -316,6 +414,8 @@ def render_audit(post: dict):
         st.markdown("**问题与提醒**")
         for item in issues[:8]:
             st.write("- {}".format(item.get("message", "")))
+    else:
+        st.caption("当前内容没有明显风险提示，适合继续检查排版和最终文案。")
 
 
 def render_media_assets(post: dict, key_prefix: str):
@@ -350,6 +450,8 @@ def render_media_assets(post: dict, key_prefix: str):
                 height=160,
                 key="{}_video_summary".format(key_prefix),
             )
+    else:
+        st.caption("图文帖会重点展示图片理解和阅读笔记，便于直接判断是否适合发布。")
 
 
 def render_post_tabs(post: dict, key_prefix: str):
@@ -446,6 +548,7 @@ def show_dashboard(dm: DraftManager):
     pending = sum(1 for d in drafts if d.get("status") == "draft")
     approved = sum(1 for d in drafts if d.get("post", {}).get("audit", {}).get("publish_ready"))
 
+    render_hero("仪表盘", "总览草稿、审核、收藏和发布进度，快速找到下一步要处理的内容。")
     st.header("仪表盘")
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("草稿总数", len(drafts))
@@ -477,6 +580,7 @@ def show_dashboard(dm: DraftManager):
 
 
 def show_login_page():
+    render_hero("登录授权", "通过 MCP 维持登录态，并同步查看账号状态与登录日志。")
     st.header("登录授权")
     status, file_state = get_login_state()
     state_label = LOGIN_STATUS_LABELS.get(status.get("state"), format_status_label(status.get("state")))
@@ -515,6 +619,7 @@ def show_login_page():
 
 def show_drafts(dm: DraftManager):
     drafts = dm.list_drafts()
+    render_hero("草稿管理", "查看、筛选、发布或收藏已生成的草稿，并直接打开原贴来源。")
     st.header("草稿管理")
     if not drafts:
         st.info("暂无草稿。")
@@ -593,6 +698,7 @@ def show_drafts(dm: DraftManager):
 
 
 def show_crawl_management(dm: DraftManager):
+    render_hero("爬取管理", "配置关键词、抓取规模与视频策略，并实时查看任务进度和结果汇总。")
     st.header("爬取管理")
     settings = load_crawl_settings()
 
@@ -672,6 +778,7 @@ def show_crawl_management(dm: DraftManager):
 
 
 def show_settings():
+    render_hero("设置", "统一管理模型路由、本地 Ollama、API Key 和降级策略。")
     st.header("设置")
     settings = load_ai_settings()
     ollama_available, ollama_message, detected_model = check_ollama_available()
@@ -729,6 +836,7 @@ def show_settings():
 
 
 def show_about():
+    render_hero("关于", "这是一份稳定、可维护的控制台入口，优先保证可读性与核心功能的完整性。")
     st.header("关于")
     st.write("这是当前项目的稳定版控制台入口，负责串联登录、抓取、草稿查看与基础设置。")
     st.write("当前页面优先保证中文可读、结构稳定、核心功能可用，后续可以继续在这份干净版本上补回更复杂的高级交互。")
