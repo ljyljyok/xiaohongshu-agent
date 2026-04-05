@@ -515,6 +515,36 @@ def render_summary_ribbon(items: list[tuple[str, str]]):
             )
 
 
+def render_state_grid(items: list[tuple[str, str, str, str]]):
+    cards = "".join(
+        """
+        <div class="state-card">
+            <div class="state-card-head">
+                <span class="state-card-icon">{}</span>
+                <span>{}</span>
+            </div>
+            <div class="state-card-value">{}</div>
+            <div class="state-card-note">{}</div>
+        </div>
+        """.format(icon, title, value, note)
+        for icon, title, value, note in items
+    )
+    if cards:
+        st.markdown(f"<div class='state-grid'>{cards}</div>", unsafe_allow_html=True)
+
+
+def render_empty_shell(title: str, description: str):
+    st.markdown(
+        """
+        <div class="empty-shell">
+            <strong>{}</strong><br/>
+            {}
+        </div>
+        """.format(title, description),
+        unsafe_allow_html=True,
+    )
+
+
 def render_sidebar_brand():
     st.markdown(
         """
@@ -781,14 +811,42 @@ def render_cover_preview(images: list[str], key_prefix: str):
     if not images:
         st.markdown(
             """
-            <div class="cover-card" style="padding:0; min-height:220px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(59,130,246,0.08), rgba(249,115,22,0.08));">
+            <div class="cover-card cover-frame" style="padding:0; min-height:220px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(59,130,246,0.08), rgba(249,115,22,0.08));">
                 <div class="small-note">暂无封面图片</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
         return
-    st.image(images[0], caption="封面预览", width="stretch")
+    image_path = images[0]
+    try:
+        with Image.open(image_path) as img:
+            prepared = img.convert("RGB")
+            target_ratio = 16 / 9
+            width, height = prepared.size
+            current_ratio = width / max(height, 1)
+            if current_ratio > target_ratio:
+                new_width = int(height * target_ratio)
+                left = max((width - new_width) // 2, 0)
+                prepared = prepared.crop((left, 0, left + new_width, height))
+            elif current_ratio < target_ratio:
+                new_height = int(width / target_ratio)
+                top = max((height - new_height) // 2, 0)
+                prepared = prepared.crop((0, top, width, top + new_height))
+            st.markdown(
+                """
+                <div class="cover-frame">
+                    <div class="cover-meta">
+                        <strong>封面预览</strong>
+                        <span>16:9 统一裁切</span>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            st.image(prepared, width="stretch")
+    except Exception:
+        st.image(image_path, caption="封面预览", width="stretch")
 
 
 def render_source(post: dict):
