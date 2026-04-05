@@ -99,8 +99,9 @@ class ContentAnalyzer:
 
     def _analyze_with_ai(self, content, base_result):
         try:
+            model_name = getattr(self.client, "default_model", None)
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=model_name,
                 messages=[
                     {
                         "role": "system",
@@ -133,7 +134,8 @@ class ContentAnalyzer:
                     "content_type": ai_result.get("content_type", "") or base_result.get("content_type", ""),
                     "relevance_score": int(ai_result.get("relevance_score", 0) or 0),
                     "keywords": list(ai_result.get("keywords", []) or []),
-                    "mode": "ai",
+                    "mode": self.mode,
+                    "mode_reason": "{} | model={}".format(self.mode_reason, model_name or "default"),
                 }
             )
             if base_result.get("keyword_forced_ai"):
