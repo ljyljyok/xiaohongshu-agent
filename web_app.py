@@ -935,6 +935,7 @@ def show_about():
 
 def main():
     st.set_page_config(page_title=APP_TITLE, layout="wide")
+    apply_theme()
     st.title(APP_TITLE)
 
     dm = DraftManager()
