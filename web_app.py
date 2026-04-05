@@ -704,6 +704,14 @@ def render_images(images: list[str], key_prefix: str):
 
 def render_cover_preview(images: list[str], key_prefix: str):
     if not images:
+        st.markdown(
+            """
+            <div class="cover-card" style="padding:0; min-height:220px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(59,130,246,0.08), rgba(249,115,22,0.08));">
+                <div class="small-note">暂无封面图片</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         return
     st.image(images[0], caption="封面预览", width="stretch")
 
@@ -1066,9 +1074,9 @@ def show_drafts(dm: DraftManager):
             render_cover_preview(images, "draft_cover_{}".format(idx))
             render_post_tabs(post, "draft_post_{}".format(idx))
 
-            col1, col2, col3 = st.columns([1.1, 1.1, 1])
+            col1, col2, col3 = st.columns([1, 1, 1])
             with col1:
-                if st.button("发布到小红书", key="publish_{}".format(draft["id"])):
+                if st.button("🚀 发布", key="publish_{}".format(draft["id"])):
                     result = publish_draft(dm, draft)
                     if isinstance(result, dict) and result.get("success"):
                         st.success(result.get("message", "发布成功"))
@@ -1076,7 +1084,7 @@ def show_drafts(dm: DraftManager):
                         st.error((result or {}).get("message", "发布失败") if isinstance(result, dict) else "发布失败")
                     st.rerun()
             with col2:
-                if st.button("收藏原贴", key="favorite_{}".format(draft["id"])):
+                if st.button("⭐ 收藏", key="favorite_{}".format(draft["id"])):
                     result = favorite_source(dm, draft)
                     if isinstance(result, dict) and result.get("success"):
                         st.success(result.get("message", "已收藏"))
@@ -1084,7 +1092,7 @@ def show_drafts(dm: DraftManager):
                         st.warning((result or {}).get("message", "收藏失败") if isinstance(result, dict) else "收藏失败")
                     st.rerun()
             with col3:
-                if st.button("删除草稿", key="delete_{}".format(draft["id"])):
+                if st.button("🗑 删除", key="delete_{}".format(draft["id"])):
                     dm.delete_draft(draft["id"])
                     st.success("草稿已删除")
                     st.rerun()
