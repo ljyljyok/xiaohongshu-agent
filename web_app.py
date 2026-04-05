@@ -10,6 +10,7 @@ import sys
 from datetime import datetime
 
 import streamlit as st
+from PIL import Image
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 if PROJECT_ROOT not in sys.path:
@@ -245,6 +246,28 @@ APP_CSS = """
     .cover-card-head {
         padding: 0.9rem 1rem 0.6rem 1rem;
     }
+    .cover-frame {
+        border-radius: 18px;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.14);
+        background: linear-gradient(135deg, rgba(59,130,246,0.06), rgba(249,115,22,0.06));
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+        margin: 0.2rem 0 0.85rem 0;
+    }
+    .cover-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.55rem 0.75rem;
+        background: linear-gradient(180deg, rgba(15,23,42,0.88), rgba(30,41,59,0.82));
+        color: #f8fafc;
+        font-size: 0.82rem;
+    }
+    .cover-meta strong {
+        color: #ffffff;
+        font-weight: 700;
+    }
     .cover-card-title {
         margin: 0 0 0.2rem 0;
         font-size: 1.05rem;
@@ -280,6 +303,58 @@ APP_CSS = """
         font-size: 0.86rem;
         line-height: 1.4;
         word-break: break-word;
+    }
+    .state-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.8rem;
+        margin: 0.35rem 0 1rem 0;
+    }
+    .state-card {
+        border-radius: 18px;
+        padding: 0.95rem 1rem;
+        background: rgba(255,255,255,0.92);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-1);
+        min-height: 112px;
+    }
+    .state-card-head {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin-bottom: 0.35rem;
+        color: var(--ink-0);
+        font-weight: 700;
+    }
+    .state-card-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        background: rgba(37,99,235,0.1);
+        font-size: 1rem;
+    }
+    .state-card-value {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--ink-0);
+        line-height: 1.45;
+    }
+    .state-card-note {
+        margin-top: 0.22rem;
+        color: var(--ink-1);
+        font-size: 0.84rem;
+        line-height: 1.45;
+    }
+    .empty-shell {
+        border-radius: 20px;
+        padding: 1.1rem 1.15rem;
+        background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(249,115,22,0.08));
+        border: 1px dashed rgba(148,163,184,0.35);
+        color: var(--ink-1);
+        margin: 0.4rem 0 0.9rem 0;
     }
     .action-strip {
         display: flex;
