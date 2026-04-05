@@ -735,27 +735,302 @@ def show_about():
 
 
 def main():
-    st.set_page_config(page_title=APP_TITLE, layout="wide")
-    st.title(APP_TITLE)
+    st.set_page_config(
+        page_title=APP_TITLE,
+        layout="wide",
+        page_icon="📕",
+        initial_sidebar_state="expanded",
+    )
+
+    custom_css = """
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        }
+
+        .stApp {
+            background: linear-gradient(135deg, #FFF5F7 0%, #FFFFFF 50%, #F8FAFF 100%);
+            min-height: 100vh;
+        }
+
+        .main .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            max-width: 1400px;
+        }
+
+        h1 {
+            color: #FF2442 !important;
+            font-weight: 700 !important;
+            font-size: 2.8rem !important;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(255, 36, 66, 0.1);
+            letter-spacing: -0.02em;
+        }
+
+        h2 {
+            color: #1F2329 !important;
+            font-weight: 600 !important;
+            font-size: 1.6rem !important;
+            margin-top: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 3px solid #FF2442;
+            display: inline-block;
+        }
+
+        h3 {
+            color: #2C3E50 !important;
+            font-weight: 600 !important;
+            font-size: 1.25rem !important;
+        }
+
+        [data-testid="stMetric"] {
+            background-color: white;
+            border: 1px solid #E8ECF0;
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+
+        [data-testid="stMetric"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(255, 36, 66, 0.15);
+            border-color: #FF2442;
+        }
+
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #FFFFFF 0%, #FFF5F7 100%) !important;
+            border-right: 2px solid #FFE5EA;
+        }
+
+        [data-testid="stSidebar"] [data-testid="stRadio"] > label {
+            background-color: white;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 6px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        [data-testid="stSidebar"] [data-testid="stRadio"] > label:hover {
+            background-color: #FFF0F3;
+            border-color: #FFB8C6;
+            transform: translateX(4px);
+        }
+
+        [data-testid="stSidebar"] [data-testid="stRadio"] > label[data-baseweb="radio-checked"] {
+            background: linear-gradient(135deg, #FF2442 0%, #FF6B81 100%);
+            color: white;
+            border-color: #FF2442;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(255, 36, 66, 0.3);
+        }
+
+        .stButton > button {
+            border-radius: 10px !important;
+            font-weight: 600 !important;
+            transition: all 0.3s ease !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        .stButton > button[kind="primary"] {
+            background: linear-gradient(135deg, #FF2442 0%, #FF6B81 100%) !important;
+            color: white !important;
+        }
+
+        .stButton > button[kind="primary"]:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 6px 20px rgba(255, 36, 66, 0.35) !important;
+        }
+
+        .stButton > button:not([kind="primary"]) {
+            background-color: white !important;
+            color: #FF2442 !important;
+            border: 2px solid #FF2442 !important;
+        }
+
+        .stButton > button:not([kind="primary"]):hover {
+            background-color: #FFF0F3 !important;
+            transform: translateY(-2px) !important;
+        }
+
+        [data-testid="stExpander"] {
+            background-color: white;
+            border: 1px solid #E8ECF0;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            margin: 8px 0;
+            transition: all 0.3s ease;
+        }
+
+        [data-testid="stExpander"]:hover {
+            border-color: #FFB8C6;
+            box-shadow: 0 4px 16px rgba(255, 36, 66, 0.1);
+        }
+
+        [data-testid="stTabs"] [role="tablist"] {
+            background-color: #F7F8FA;
+            border-radius: 10px;
+            padding: 6px;
+            gap: 4px;
+        }
+
+        [data-testid="stTabs"] [role="tab"] {
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        [data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+            background-color: #FF2442 !important;
+            color: white !important;
+        }
+
+        [data-testid="stSelectbox"] > div > div {
+            background-color: white;
+            border-radius: 8px;
+            border: 2px solid #E8ECF0;
+        }
+
+        [data-testid="stTextInput"] input {
+            border-radius: 8px;
+            border: 2px solid #E8ECF0;
+            transition: all 0.3s ease;
+        }
+
+        [data-testid="stTextInput"] input:focus {
+            border-color: #FF2442 !important;
+            box-shadow: 0 0 0 3px rgba(255, 36, 66, 0.1) !important;
+        }
+
+        [data-testid="stTextArea"] textarea {
+            border-radius: 8px;
+            border: 2px solid #E8ECF0;
+            transition: all 0.3s ease;
+        }
+
+        [data-testid="stTextArea"] textarea:focus {
+            border-color: #FF2442 !important;
+            box-shadow: 0 0 0 3px rgba(255, 36, 66, 0.1) !important;
+        }
+
+        [data-testid="stCheckbox"] label {
+            background-color: white;
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+
+        [data-testid="stNumberInput"] input {
+            border-radius: 8px;
+            border: 2px solid #E8ECF0;
+        }
+
+        [data-testid="stImage"] img {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        [data-testid="stImage"] img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .stProgress > div > div > div > div {
+            background: linear-gradient(90deg, #FF2442 0%, #FF6B81 100%);
+            border-radius: 20px;
+        }
+
+        .stInfo {
+            background: linear-gradient(135deg, #E8F4FD 0%, #F0F7FF 100%) !important;
+            border-left: 4px solid #1890FF !important;
+            border-radius: 10px !important;
+            padding: 1rem 1.2rem !important;
+        }
+
+        .stSuccess {
+            background: linear-gradient(135deg, #F0FFF4 0%, #E8FDF0 100%) !important;
+            border-left: 4px solid #52C41A !important;
+            border-radius: 10px !important;
+            padding: 1rem 1.2rem !important;
+        }
+
+        .stWarning {
+            background: linear-gradient(135deg, #FFFBE6 0%, #FFF9E6 100%) !important;
+            border-left: 4px solid #FAAD14 !important;
+            border-radius: 10px !important;
+            padding: 1rem 1.2rem !important;
+        }
+
+        .stError {
+            background: linear-gradient(135deg, #FFF1F0 0%, #FFECEA 100%) !important;
+            border-left: 4px solid #FF2442 !important;
+            border-radius: 10px !important;
+            padding: 1rem 1.2rem !important;
+        }
+
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #FFE5EA 50%, transparent 100%);
+            margin: 2rem 0;
+        }
+
+        .stCaption {
+            color: #8C959F !important;
+            font-size: 0.9rem !important;
+        }
+
+        code {
+            background-color: #F7F8FA !important;
+            border-radius: 6px !important;
+            padding: 2px 8px !important;
+            color: #FF2442 !important;
+            font-family: 'Monaco', 'Consolas', monospace !important;
+        }
+
+        pre {
+            background-color: #1F2329 !important;
+            border-radius: 10px !important;
+            padding: 1rem !important;
+            overflow-x: auto;
+        }
+    </style>
+    """
+
+    st.markdown(custom_css, unsafe_allow_html=True)
 
     dm = DraftManager()
     with st.sidebar:
-        page = st.radio("页面", ["仪表盘", "登录授权", "草稿管理", "爬取管理", "设置", "关于"], key="sidebar_page")
-        if st.button("刷新页面", key="sidebar_refresh"):
+        st.markdown("### 🎯 导航菜单")
+        page = st.radio(
+            "页面选择",
+            ["📊 仪表盘", "🔐 登录授权", "📝 草稿管理", "🕷️ 爬取管理", "⚙️ 设置", "ℹ️ 关于"],
+            key="sidebar_page",
+            label_visibility="collapsed",
+        )
+        st.markdown("---")
+        if st.button("🔄 刷新页面", key="sidebar_refresh", use_container_width=True):
             st.rerun()
 
-    if page == "仪表盘":
-        show_dashboard(dm)
-    elif page == "登录授权":
-        show_login_page()
-    elif page == "草稿管理":
-        show_drafts(dm)
-    elif page == "爬取管理":
-        show_crawl_management(dm)
-    elif page == "设置":
-        show_settings()
-    else:
-        show_about()
+    page_map = {
+        "📊 仪表盘": show_dashboard,
+        "🔐 登录授权": show_login_page,
+        "📝 草稿管理": show_drafts,
+        "🕷️ 爬取管理": show_crawl_management,
+        "⚙️ 设置": show_settings,
+        "ℹ️ 关于": show_about,
+    }
+
+    if page in page_map:
+        page_map[page](dm)
+
 
 
 if __name__ == "__main__":
