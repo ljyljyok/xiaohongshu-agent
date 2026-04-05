@@ -87,6 +87,7 @@ class OllamaClient:
         self.default_model = default_model or OLLAMA_MODEL
         self.chat = _ChatNamespace(self)
         self.session = requests.Session()
+        self._endpoint_order_cache = None
 
     def _normalize_ollama_image(self, value):
         raw = str(value or "").strip()
@@ -162,6 +163,32 @@ class OllamaClient:
         response.raise_for_status()
         return response.json()
 
+    def _probe_endpoint(self, path):
+        try:
+            response = self.session.options(self.base_url + path, timeout=5)
+            return response.status_code != 404
+        except Exception:
+            return None
+
+    def _preferred_endpoints(self):
+        if self._endpoint_order_cache is not None:
+            return list(self._endpoint_order_cache)
+
+        candidates = ["/api/chat", "/api/generate", "/v1/chat/completions"]
+        supported = []
+        unknown = []
+        for path in candidates:
+            available = self._probe_endpoint(path)
+            if available is True:
+                supported.append(path)
+            elif available is None:
+                unknown.append(path)
+        ordered = supported + [path for path in candidates if path not in supported and path not in unknown] + unknown
+        if not ordered:
+            ordered = list(candidates)
+        self._endpoint_order_cache = ordered
+        return list(ordered)
+
     def _create_completion(self, model=None, messages=None, temperature=0.2, max_tokens=512, response_format=None):
         converted_messages = self._convert_messages(messages or [])
         chat_payload = {
@@ -173,21 +200,6 @@ class OllamaClient:
                 "num_predict": max_tokens,
             },
         }
-
-        attempted = []
-        try:
-            attempted.append("/api/chat")
-            data = self._post_json("/api/chat", chat_payload, timeout=180)
-            content = ((data.get("message") or {}).get("content") or "").strip()
-            return SimpleNamespace(
-                choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
-            )
-        except requests.HTTPError as exc:
-            response = getattr(exc, "response", None)
-            if getattr(response, "status_code", None) not in (404, 405):
-                raise
-        except Exception:
-            pass
 
         generate_payload = {
             "model": model or self.default_model,
@@ -201,19 +213,6 @@ class OllamaClient:
         generate_images = self._extract_generate_images(messages or [])
         if generate_images:
             generate_payload["images"] = generate_images
-        try:
-            attempted.append("/api/generate")
-            data = self._post_json("/api/generate", generate_payload, timeout=180)
-            content = str(data.get("response") or "").strip()
-            return SimpleNamespace(
-                choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
-            )
-        except requests.HTTPError as exc:
-            response = getattr(exc, "response", None)
-            if getattr(response, "status_code", None) not in (404, 405):
-                raise
-        except Exception:
-            pass
 
         openai_payload = {
             "model": model or self.default_model,
@@ -223,23 +222,44 @@ class OllamaClient:
         }
         if response_format:
             openai_payload["response_format"] = response_format
-        try:
-            attempted.append("/v1/chat/completions")
-            data = self._post_openai_compatible(openai_payload, timeout=180)
-            choices = data.get("choices") or []
-            content = ""
-            if choices:
-                content = ((choices[0] or {}).get("message") or {}).get("content") or ""
-            return SimpleNamespace(
-                choices=[SimpleNamespace(message=SimpleNamespace(content=content.strip()))]
-            )
-        except Exception as exc:
-            raise RuntimeError(
-                "Ollama 接口均不可用，已尝试 {}，最后错误: {}".format(
-                    " -> ".join(attempted),
-                    str(exc)[:180],
+        attempted = []
+        last_error = None
+        for path in self._preferred_endpoints():
+            attempted.append(path)
+            try:
+                if path == "/api/chat":
+                    data = self._post_json(path, chat_payload, timeout=180)
+                    content = ((data.get("message") or {}).get("content") or "").strip()
+                elif path == "/api/generate":
+                    data = self._post_json(path, generate_payload, timeout=180)
+                    content = str(data.get("response") or "").strip()
+                else:
+                    data = self._post_openai_compatible(openai_payload, timeout=180)
+                    choices = data.get("choices") or []
+                    content = ""
+                    if choices:
+                        content = ((choices[0] or {}).get("message") or {}).get("content") or ""
+                    content = content.strip()
+                return SimpleNamespace(
+                    choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
                 )
-            ) from exc
+            except requests.HTTPError as exc:
+                response = getattr(exc, "response", None)
+                status_code = getattr(response, "status_code", None)
+                if status_code in (404, 405):
+                    last_error = "{} -> HTTP {}".format(path, status_code)
+                    continue
+                raise
+            except Exception as exc:
+                last_error = "{} -> {}".format(path, str(exc)[:180])
+                continue
+
+        raise RuntimeError(
+            "Ollama 接口均不可用，已尝试 {}，最后错误: {}".format(
+                " -> ".join(attempted),
+                last_error or "unknown",
+            )
+        )
 
 
 def check_ollama_available(base_url=None, model_name=None):
