@@ -163,6 +163,21 @@ class OllamaClient:
         response.raise_for_status()
         return response.json()
 
+    def _extract_chat_content(self, data):
+        message = data.get("message") or {}
+        content = str(message.get("content") or "").strip()
+        reasoning = str(message.get("reasoning") or "").strip()
+        return content or reasoning
+
+    def _extract_openai_compatible_content(self, data):
+        choices = data.get("choices") or []
+        if not choices:
+            return ""
+        message = (choices[0] or {}).get("message") or {}
+        content = str(message.get("content") or "").strip()
+        reasoning = str(message.get("reasoning") or "").strip()
+        return content or reasoning
+
     def _probe_endpoint(self, path):
         try:
             response = self.session.options(self.base_url + path, timeout=5)
@@ -229,17 +244,13 @@ class OllamaClient:
             try:
                 if path == "/api/chat":
                     data = self._post_json(path, chat_payload, timeout=180)
-                    content = ((data.get("message") or {}).get("content") or "").strip()
+                    content = self._extract_chat_content(data)
                 elif path == "/api/generate":
                     data = self._post_json(path, generate_payload, timeout=180)
                     content = str(data.get("response") or "").strip()
                 else:
                     data = self._post_openai_compatible(openai_payload, timeout=180)
-                    choices = data.get("choices") or []
-                    content = ""
-                    if choices:
-                        content = ((choices[0] or {}).get("message") or {}).get("content") or ""
-                    content = content.strip()
+                    content = self._extract_openai_compatible_content(data)
                 return SimpleNamespace(
                     choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
                 )
