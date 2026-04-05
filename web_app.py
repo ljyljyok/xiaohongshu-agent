@@ -44,6 +44,14 @@ from src.ui.draft_manager import DraftManager
 APP_TITLE = "小红书 Agent 控制台"
 CRAWL_SCRIPT = os.path.join(PROJECT_ROOT, "scripts", "crawl_latest_aigc.py")
 UI_SETTINGS_FILE = os.path.join(XHS_STATE_DIR, "ui_runtime_state.json")
+PAGE_OPTIONS = {
+    "🏠 仪表盘": "仪表盘",
+    "🔐 登录授权": "登录授权",
+    "📝 草稿管理": "草稿管理",
+    "🚀 爬取管理": "爬取管理",
+    "🛠️ 设置": "设置",
+    "ℹ️ 关于": "关于",
+}
 
 APP_CSS = """
 <style>
@@ -640,6 +648,11 @@ def render_sidebar_brand():
     )
 
 
+def go_to_sidebar_page(label: str):
+    st.session_state["sidebar_page"] = label
+    st.rerun()
+
+
 def load_json(path: str, default):
     if not path or not os.path.exists(path):
         return default
@@ -937,6 +950,7 @@ def render_cover_preview(images: list[str], key_prefix: str):
                 """,
                 unsafe_allow_html=True,
             )
+            st.caption("封面区采用统一裁切和说明浮层，便于在仪表盘里快速判断内容质量。")
     except Exception:
         st.image(image_path, caption="封面预览", width="stretch")
 
