@@ -683,6 +683,9 @@ def render_sidebar_brand():
 
 
 def go_to_sidebar_page(label: str):
+    state = get_ui_state()
+    state["active_page"] = label
+    persist_ui_state()
     st.session_state["sidebar_page"] = label
     st.rerun()
 
@@ -797,6 +800,7 @@ def load_ui_state():
     return load_json(
         UI_SETTINGS_FILE,
         {
+            "active_page": "🏠 仪表盘",
             "login_status_file": "",
             "login_log_file": "",
             "login_pid": 0,
@@ -1482,6 +1486,8 @@ def show_crawl_management(dm: DraftManager):
     task_status = "运行中" if payload and payload.get("status") == "running" else "待启动"
 
     if payload and payload.get("status") == "running":
+        ui_state["active_page"] = "🚀 爬取管理"
+        persist_ui_state()
         components.html(
             """
             <script>
@@ -1661,11 +1667,19 @@ def main():
     st.title(APP_TITLE)
 
     dm = DraftManager()
+    state = get_ui_state()
+    saved_page = state.get("active_page", "🏠 仪表盘")
+    if saved_page not in PAGE_OPTIONS:
+        saved_page = "🏠 仪表盘"
+    if "sidebar_page" not in st.session_state:
+        st.session_state["sidebar_page"] = saved_page
     with st.sidebar:
         render_sidebar_brand()
         page_label = st.radio("页面", list(PAGE_OPTIONS.keys()), key="sidebar_page")
         if st.button("刷新页面", key="sidebar_refresh"):
             st.rerun()
+    state["active_page"] = page_label
+    persist_ui_state()
     page = PAGE_OPTIONS[page_label]
 
     if page == "仪表盘":
