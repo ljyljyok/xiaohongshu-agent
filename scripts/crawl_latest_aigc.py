@@ -647,6 +647,7 @@ def process_candidates(
     for index, post in enumerate(posts, start=1):
         result = analyzer.analyze_content(post, user_keywords=user_keywords or [])
         post["analysis"] = result
+        print("[筛选 {}/{}] {} | AI相关={}".format(index, total, post.get("title", "")[:40], result.get("is_ai_related", False)))
         if result.get("is_ai_related", False):
             ai_posts.append(post)
         else:
@@ -673,6 +674,7 @@ def process_candidates(
     media_ready_posts = []
     for index, post in enumerate(ai_posts, start=1):
         media_type = post.get("media_type", "image")
+        print("[媒体 {}/{}] {} | 类型={}".format(index, len(ai_posts), post.get("title", "")[:40], media_type))
         if media_type == "video" and skip_video:
             skipped = dict(post)
             skipped["skip_video"] = True
@@ -681,6 +683,12 @@ def process_candidates(
         else:
             current = video_processor.process_post(post) if media_type == "video" else image_generator.process_post(post, allow_fallback=False)
             current["skip_video"] = bool(skip_video)
+            print(
+                "      -> 媒体完成 | 原图={} | 最终图={}".format(
+                    len(current.get("original_image_paths", []) or []),
+                    len(current.get("final_image_paths", []) or []),
+                )
+            )
             media_ready_posts.append(current)
         if progress:
             progress.update(
@@ -697,6 +705,7 @@ def process_candidates(
 
     notes_ready_posts = []
     for index, post in enumerate(media_ready_posts, start=1):
+        print("[笔记 {}/{}] {}".format(index, len(media_ready_posts), post.get("title", "")[:40]))
         current = rewriter.process_post(post)
         current = rewriter.enrich_post_with_media_context(current)
         notes_ready_posts.append(current)
@@ -712,6 +721,7 @@ def process_candidates(
         progress.update(stage_id="audit", current=0, total=len(notes_ready_posts), message="开始内容审核")
 
     for index, post in enumerate(notes_ready_posts, start=1):
+        print("[审核 {}/{}] {}".format(index, len(notes_ready_posts), post.get("title", "")[:40]))
         auditor.audit_content(post)
         processed_posts.append(post)
         approved = len([item for item in processed_posts if is_publish_ready(item)])

@@ -648,14 +648,31 @@ class XiaohongshuCrawler:
             return False
         return url.startswith("http://") or url.startswith("https://") or url.startswith("//")
 
+    def _merge_unique_urls(self, *url_lists) -> List[str]:
+        merged = []
+        seen = set()
+        for url_list in url_lists:
+            for url in url_list or []:
+                normalized = self._normalize_url(url)
+                if normalized and normalized not in seen:
+                    merged.append(normalized)
+                    seen.add(normalized)
+        return merged
+
     def _merge_post_detail(self, post: Dict, detail: Dict) -> Dict:
         merged = dict(post or {})
         for key in ["title", "content", "author", "likes", "publish_time", "media_type", "original_video_url"]:
             if detail.get(key):
                 merged[key] = detail[key]
-        if detail.get("images"):
-            merged["images"] = detail["images"]
-            merged["original_image_urls"] = detail["images"]
+        merged_images = self._merge_unique_urls(
+            post.get("original_image_urls", []),
+            post.get("images", []),
+            detail.get("images", []),
+            detail.get("original_image_urls", []),
+        )
+        if merged_images:
+            merged["images"] = merged_images
+            merged["original_image_urls"] = merged_images
         if detail.get("video_urls"):
             merged["video_urls"] = detail["video_urls"]
         merged["link"] = detail.get("source_url") or self._normalize_url(post.get("link", ""))
