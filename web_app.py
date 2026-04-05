@@ -85,6 +85,7 @@ APP_CSS = """
         background: rgba(255, 255, 255, 0.94);
         border: 1px solid var(--line-0);
         box-shadow: var(--shadow-1);
+        animation: softRise 0.45s ease both;
     }
     div[data-testid="stExpander"] {
         border-radius: 20px;
@@ -92,6 +93,7 @@ APP_CSS = """
         border: 1px solid var(--line-0);
         box-shadow: var(--shadow-1);
         margin-bottom: 0.85rem;
+        animation: softRise 0.45s ease both;
     }
     div[data-testid="stTabs"] {
         border-radius: 20px;
@@ -131,6 +133,7 @@ APP_CSS = """
             rgba(255, 255, 255, 0.82);
         border: 1px solid var(--line-0);
         box-shadow: var(--shadow-0);
+        animation: heroFade 0.55s ease both;
     }
     .hero-banner h1 {
         margin: 0 0 0.25rem 0;
@@ -175,10 +178,40 @@ APP_CSS = """
         background: rgba(255, 255, 255, 0.82);
         border: 1px solid var(--line-0);
         box-shadow: var(--shadow-1);
+        animation: softRise 0.4s ease both;
     }
     .section-shell h2 {
         margin: 0 0 0.2rem 0;
         font-size: 1.1rem;
+    }
+    .sidebar-brand {
+        border-radius: 18px;
+        padding: 0.95rem 0.95rem 0.85rem 0.95rem;
+        margin-bottom: 0.9rem;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(249, 115, 22, 0.14));
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 12px 28px rgba(2, 6, 23, 0.22);
+    }
+    .sidebar-brand h3 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: 1.02rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+    .sidebar-brand p {
+        margin: 0.32rem 0 0 0;
+        color: rgba(226, 232, 240, 0.84);
+        font-size: 0.84rem;
+        line-height: 1.45;
+    }
+    @keyframes heroFade {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes softRise {
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 """
@@ -221,6 +254,18 @@ def render_badges(items: list[tuple[str, str]]):
     )
     if html:
         st.markdown(html, unsafe_allow_html=True)
+
+
+def render_sidebar_brand():
+    st.markdown(
+        """
+        <div class="sidebar-brand">
+            <h3>小红书 Agent</h3>
+            <p>抓取、审核、润色、发布，一站式工作台。</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def load_json(path: str, default):
@@ -939,10 +984,20 @@ def main():
     st.title(APP_TITLE)
 
     dm = DraftManager()
+    page_options = {
+        "🏠 仪表盘": "仪表盘",
+        "🔐 登录授权": "登录授权",
+        "📝 草稿管理": "草稿管理",
+        "🚀 爬取管理": "爬取管理",
+        "🛠️ 设置": "设置",
+        "ℹ️ 关于": "关于",
+    }
     with st.sidebar:
-        page = st.radio("页面", ["仪表盘", "登录授权", "草稿管理", "爬取管理", "设置", "关于"], key="sidebar_page")
+        render_sidebar_brand()
+        page_label = st.radio("页面", list(page_options.keys()), key="sidebar_page")
         if st.button("刷新页面", key="sidebar_refresh"):
             st.rerun()
+    page = page_options[page_label]
 
     if page == "仪表盘":
         show_dashboard(dm)
