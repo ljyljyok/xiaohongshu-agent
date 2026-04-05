@@ -1039,12 +1039,18 @@ def show_crawl_management(dm: DraftManager):
     max_posts = st.number_input("最大帖子数", min_value=1, max_value=50, value=settings["max_posts"], step=1, key="crawl_max_posts")
     skip_video = st.checkbox("跳过视频帖", value=settings["skip_video"], key="crawl_skip_video")
 
+    ui_state = get_ui_state()
+    status_file = ui_state.get("crawl_status_file", "")
+    log_file = ui_state.get("crawl_log_file", "")
+    payload = read_json(status_file)
+    task_status = "运行中" if payload and payload.get("status") == "running" else "待启动"
+
     st.caption("当前模式: 关键词 [{}] | 最大帖子数 {} | {}".format(keywords, int(max_posts), "跳过视频" if skip_video else "保留视频"))
     render_summary_ribbon([
         ("关键词", keywords or "未设置"),
         ("最大帖子数", str(int(max_posts))),
         ("视频策略", "跳过视频" if skip_video else "保留视频"),
-        ("任务状态", "运行中" if payload.get("status") == "running" if 'payload' in locals() and payload else "待启动"),
+        ("任务状态", task_status),
     ])
 
     col1, col2 = st.columns(2)
@@ -1057,11 +1063,6 @@ def show_crawl_management(dm: DraftManager):
             save_crawl_settings(keywords, int(max_posts), skip_video)
             start_crawl(keywords, int(max_posts), skip_video)
             st.success("已启动后台爬取任务。")
-
-    ui_state = get_ui_state()
-    status_file = ui_state.get("crawl_status_file", "")
-    log_file = ui_state.get("crawl_log_file", "")
-    payload = read_json(status_file)
 
     if payload:
         render_section("实时进度", "阶段、统计和日志都在这里刷新。", icon="📡")
