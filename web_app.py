@@ -1095,6 +1095,12 @@ def show_login_page():
     col2.metric("后端", "MCP")
     col3.metric("Profile 目录", "已存在" if os.path.isdir(XHS_PROFILE_DIR) else "未创建")
     col4.metric("Cookie 回退", "未生成（正常）" if not os.path.exists(XHS_COOKIE_FILE) else "已存在")
+    render_state_grid([
+        ("🔐", "登录状态", state_label, "当前账号是否可用于发布和抓取"),
+        ("🧩", "后端", "MCP", "默认通过 MCP 维持登录态"),
+        ("📁", "Profile 目录", "已存在" if os.path.isdir(XHS_PROFILE_DIR) else "未创建", XHS_PROFILE_DIR),
+        ("🍪", "Cookie 回退", "未生成（正常）" if not os.path.exists(XHS_COOKIE_FILE) else "已存在", XHS_COOKIE_FILE),
+    ])
     render_summary_ribbon([
         ("登录状态", state_label),
         ("后端", "MCP"),
@@ -1126,6 +1132,8 @@ def show_login_page():
         st.markdown("[账号主页]({})".format(profile_url))
     if file_state:
         st.json(file_state)
+    else:
+        render_empty_shell("还没有登录状态文件", "点击“启动浏览器登录”后，这里会显示最新状态和日志。")
 
 
 def show_drafts(dm: DraftManager):
@@ -1254,6 +1262,12 @@ def show_crawl_management(dm: DraftManager):
         ("视频策略", "跳过视频" if skip_video else "保留视频"),
         ("任务状态", task_status),
     ])
+    render_state_grid([
+        ("🔎", "搜索关键词", keywords or "未设置", "决定本轮抓取的主题范围"),
+        ("📚", "最大帖子数", str(int(max_posts)), "限制本轮抓取和处理的规模"),
+        ("🎞️", "视频策略", "跳过视频" if skip_video else "保留视频", "决定视频帖是否进入后续链路"),
+        ("📡", "任务状态", task_status, "根据状态文件实时更新"),
+    ])
 
     col1, col2 = st.columns(2)
     with col1:
@@ -1307,6 +1321,7 @@ def show_crawl_management(dm: DraftManager):
                     st.write("- {}: {}".format(item.get("reason", "未说明"), item.get("count", 0)))
     else:
         st.info("当前还没有进行中的爬取任务。保存设置后即可启动实时爬取。")
+        render_empty_shell("暂无进行中的爬取任务", "先配置关键词和最大帖子数，再点击“开始实时爬取”。")
 
     if log_file:
         st.subheader("实时日志")
@@ -1363,6 +1378,12 @@ def show_settings():
     col2.metric("默认地址", OLLAMA_BASE_URL)
     col3.metric("默认模型", detected_model or OLLAMA_MODEL)
     st.caption(ollama_message)
+    render_state_grid([
+        ("🤖", "Ollama 状态", "可用" if ollama_available else "不可用", "本地模型链路是否可直接调用"),
+        ("🌐", "默认地址", OLLAMA_BASE_URL, "本地 Ollama 服务地址"),
+        ("🧠", "默认模型", detected_model or OLLAMA_MODEL, "当前检测到的默认模型"),
+        ("🪄", "默认策略", format_mode_label(settings.get("content_analyzer_mode")), "内容分析当前优先使用的模式"),
+    ])
     render_summary_ribbon([
         ("Ollama", "可用" if ollama_available else "不可用"),
         ("默认地址", OLLAMA_BASE_URL),
