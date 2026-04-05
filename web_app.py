@@ -254,6 +254,10 @@ APP_CSS = """
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
         margin: 0.2rem 0 0.85rem 0;
     }
+    .cover-stack {
+        position: relative;
+        margin: 0.2rem 0 0.85rem 0;
+    }
     .cover-meta {
         display: flex;
         justify-content: space-between;
@@ -267,6 +271,27 @@ APP_CSS = """
     .cover-meta strong {
         color: #ffffff;
         font-weight: 700;
+    }
+    .cover-hover-note {
+        position: absolute;
+        left: 0.85rem;
+        right: 0.85rem;
+        bottom: 0.85rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0.6rem 0.8rem;
+        border-radius: 14px;
+        background: linear-gradient(180deg, rgba(15,23,42,0.08), rgba(15,23,42,0.82));
+        color: #f8fafc;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 24px rgba(15,23,42,0.18);
+    }
+    .cover-hover-note strong,
+    .cover-hover-note span {
+        color: #f8fafc !important;
+        font-size: 0.82rem;
     }
     .cover-card-title {
         margin: 0 0 0.2rem 0;
@@ -347,6 +372,70 @@ APP_CSS = """
         color: var(--ink-1);
         font-size: 0.84rem;
         line-height: 1.45;
+    }
+    .state-panel {
+        border-radius: 18px;
+        padding: 0.95rem 1rem;
+        background: rgba(255,255,255,0.92);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-1);
+        min-height: 122px;
+        margin-bottom: 0.6rem;
+    }
+    .state-panel-head {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin-bottom: 0.35rem;
+        font-weight: 700;
+        color: var(--ink-0);
+    }
+    .state-panel-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 999px;
+        background: rgba(37,99,235,0.1);
+        font-size: 1rem;
+    }
+    .state-panel-value {
+        font-size: 1rem;
+        line-height: 1.45;
+        font-weight: 700;
+        color: var(--ink-0);
+        word-break: break-word;
+    }
+    .state-panel-note {
+        margin-top: 0.22rem;
+        color: var(--ink-1);
+        font-size: 0.84rem;
+        line-height: 1.45;
+    }
+    .dashboard-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.9fr);
+        gap: 1rem;
+        align-items: start;
+    }
+    .quick-panel {
+        border-radius: 20px;
+        padding: 1rem 1.05rem;
+        background: rgba(255,255,255,0.92);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-1);
+        margin-bottom: 0.9rem;
+    }
+    .quick-panel h3 {
+        margin: 0 0 0.45rem 0;
+        font-size: 1rem;
+        color: var(--ink-0);
+    }
+    .quick-panel p {
+        margin: 0.15rem 0;
+        color: var(--ink-1);
+        font-size: 0.9rem;
     }
     .empty-shell {
         border-radius: 20px;
@@ -516,21 +605,24 @@ def render_summary_ribbon(items: list[tuple[str, str]]):
 
 
 def render_state_grid(items: list[tuple[str, str, str, str]]):
-    cards = "".join(
-        """
-        <div class="state-card">
-            <div class="state-card-head">
-                <span class="state-card-icon">{}</span>
-                <span>{}</span>
-            </div>
-            <div class="state-card-value">{}</div>
-            <div class="state-card-note">{}</div>
-        </div>
-        """.format(icon, title, value, note)
-        for icon, title, value, note in items
-    )
-    if cards:
-        st.markdown(f"<div class='state-grid'>{cards}</div>", unsafe_allow_html=True)
+    if not items:
+        return
+    cols = st.columns(len(items))
+    for col, (icon, title, value, note) in zip(cols, items):
+        with col:
+            st.markdown(
+                """
+                <div class="state-panel">
+                    <div class="state-panel-head">
+                        <span class="state-panel-icon">{}</span>
+                        <span>{}</span>
+                    </div>
+                    <div class="state-panel-value">{}</div>
+                    <div class="state-panel-note">{}</div>
+                </div>
+                """.format(icon, title, value, note),
+                unsafe_allow_html=True,
+            )
 
 
 def render_empty_shell(title: str, description: str):
@@ -845,6 +937,15 @@ def render_cover_preview(images: list[str], key_prefix: str):
                 unsafe_allow_html=True,
             )
             st.image(prepared, width="stretch")
+            st.markdown(
+                """
+                <div class="cover-hover-note">
+                    <strong>内容封面</strong>
+                    <span>统一裁切，便于快速浏览</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
     except Exception:
         st.image(image_path, caption="封面预览", width="stretch")
 
