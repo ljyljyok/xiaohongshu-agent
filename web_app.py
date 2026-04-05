@@ -236,6 +236,28 @@ APP_CSS = """
         color: var(--ink-1);
         font-size: 0.9rem;
     }
+    .summary-ribbon {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.8rem;
+        margin: 0.2rem 0 1rem 0;
+    }
+    .summary-pill {
+        border-radius: 18px;
+        padding: 0.95rem 1rem;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-1);
+    }
+    .summary-pill strong {
+        display: block;
+        font-size: 1.35rem;
+        color: var(--ink-0);
+    }
+    .summary-pill span {
+        color: var(--ink-1);
+        font-size: 0.86rem;
+    }
     .action-strip {
         display: flex;
         gap: 0.55rem;
@@ -250,6 +272,32 @@ APP_CSS = """
         color: var(--ink-1);
         font-size: 0.82rem;
         border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+    .toolbar-shell {
+        position: sticky;
+        top: 0.5rem;
+        z-index: 5;
+        display: flex;
+        gap: 0.55rem;
+        flex-wrap: wrap;
+        margin: 0 0 0.8rem 0;
+        padding: 0.75rem 0.8rem;
+        border-radius: 16px;
+        background: rgba(248, 250, 252, 0.92);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+    .toolbar-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.32rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.08);
+        color: var(--accent);
+        font-size: 0.82rem;
+        border: 1px solid rgba(37, 99, 235, 0.12);
     }
     .sidebar-brand {
         border-radius: 18px;
@@ -343,6 +391,26 @@ def render_action_strip(items: list[str]):
     html = "".join(f"<span class='action-chip'>{item}</span>" for item in items if item)
     if html:
         st.markdown(f"<div class='action-strip'>{html}</div>", unsafe_allow_html=True)
+
+
+def render_toolbar(items: list[str]):
+    html = "".join(f"<span class='toolbar-chip'>{item}</span>" for item in items if item)
+    if html:
+        st.markdown(f"<div class='toolbar-shell'>{html}</div>", unsafe_allow_html=True)
+
+
+def render_summary_ribbon(items: list[tuple[str, str]]):
+    blocks = "".join(
+        """
+        <div class="summary-pill">
+            <strong>{}</strong>
+            <span>{}</span>
+        </div>
+        """.format(value, label)
+        for label, value in items
+    )
+    if blocks:
+        st.markdown(f"<div class='summary-ribbon'>{blocks}</div>", unsafe_allow_html=True)
 
 
 def render_sidebar_brand():
@@ -676,6 +744,12 @@ def render_media_assets(post: dict, key_prefix: str):
 
 def render_post_tabs(post: dict, key_prefix: str):
     body = get_post_body(post)
+    render_toolbar([
+        "媒体 {}".format(format_media_label(post.get("media_type", "image"))),
+        "来源 {}".format(post.get("source") or "未知"),
+        "原贴 {}".format("可访问" if get_source_url(post) else "缺失"),
+        "审核 {}".format("通过" if post.get("audit", {}).get("publish_ready") else "待确认"),
+    ])
     tabs = st.tabs(["待发布文案", "阅读笔记", "原贴详情", "媒体资产", "审核结果"])
     with tabs[0]:
         if body:
@@ -777,6 +851,12 @@ def show_dashboard(dm: DraftManager):
     col3.metric("图文帖", image_posts)
     col4.metric("视频帖", video_posts)
     col5.metric("审核通过", approved)
+    render_summary_ribbon([
+        ("今日焦点", "优先处理待发布草稿"),
+        ("审核通过", str(approved)),
+        ("已收藏", str(favorites)),
+        ("内容类型", "{} 图文 / {} 视频".format(image_posts, video_posts)),
+    ])
     st.caption("已收藏草稿: {}".format(favorites))
     st.markdown("---")
 
