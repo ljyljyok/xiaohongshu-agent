@@ -124,25 +124,68 @@ class OllamaClient:
                 converted.append({"role": role, "content": str(content or "")})
         return converted
 
+    def _messages_to_prompt(self, messages):
+        parts = []
+        for item in self._convert_messages(messages or []):
+            role = str(item.get("role") or "user").strip().upper()
+            content = str(item.get("content") or "").strip()
+            if content:
+                parts.append("{}:\n{}".format(role, content))
+        parts.append("ASSISTANT:")
+        return "\n\n".join(parts).strip()
+
+    def _extract_generate_images(self, messages):
+        converted = self._convert_messages(messages or [])
+        for item in reversed(converted):
+            images = item.get("images") or []
+            if images:
+                return images
+        return []
+
+    def _post_json(self, path, payload, timeout):
+        response = self.session.post(
+            self.base_url + path,
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload),
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        return response.json()
+
     def _create_completion(self, model=None, messages=None, temperature=0.2, max_tokens=512, response_format=None):
-        payload = {
+        converted_messages = self._convert_messages(messages or [])
+        chat_payload = {
             "model": model or self.default_model,
-            "messages": self._convert_messages(messages or []),
+            "messages": converted_messages,
             "stream": False,
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens,
             },
         }
-        response = self.session.post(
-            self.base_url + "/api/chat",
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(payload),
-            timeout=120,
-        )
-        response.raise_for_status()
-        data = response.json()
-        content = ((data.get("message") or {}).get("content") or "").strip()
+
+        try:
+            data = self._post_json("/api/chat", chat_payload, timeout=180)
+            content = ((data.get("message") or {}).get("content") or "").strip()
+        except requests.HTTPError as exc:
+            response = getattr(exc, "response", None)
+            status_code = getattr(response, "status_code", None)
+            if status_code != 404:
+                raise
+            generate_payload = {
+                "model": model or self.default_model,
+                "prompt": self._messages_to_prompt(messages or []),
+                "stream": False,
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": max_tokens,
+                },
+            }
+            generate_images = self._extract_generate_images(messages or [])
+            if generate_images:
+                generate_payload["images"] = generate_images
+            data = self._post_json("/api/generate", generate_payload, timeout=180)
+            content = str(data.get("response") or "").strip()
         return SimpleNamespace(
             choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
         )
