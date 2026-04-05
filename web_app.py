@@ -1205,6 +1205,26 @@ def show_dashboard(dm: DraftManager):
         st.markdown(
             """
             <div class="quick-panel">
+                <h3>快捷入口</h3>
+                <p>直接跳到最常用的工作页面。</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        q1, q2 = st.columns(2)
+        with q1:
+            if st.button("📝 去草稿", key="quick_to_drafts"):
+                go_to_sidebar_page("📝 草稿管理")
+            if st.button("🔐 去登录", key="quick_to_login"):
+                go_to_sidebar_page("🔐 登录授权")
+        with q2:
+            if st.button("🚀 去爬取", key="quick_to_crawl"):
+                go_to_sidebar_page("🚀 爬取管理")
+            if st.button("🛠️ 去设置", key="quick_to_settings"):
+                go_to_sidebar_page("🛠️ 设置")
+        st.markdown(
+            """
+            <div class="quick-panel">
                 <h3>建议下一步</h3>
                 <p>1. 先检查待发布草稿的阅读笔记与封面。</p>
                 <p>2. 再确认原贴来源与审核状态。</p>
@@ -1554,20 +1574,12 @@ def main():
     st.title(APP_TITLE)
 
     dm = DraftManager()
-    page_options = {
-        "🏠 仪表盘": "仪表盘",
-        "🔐 登录授权": "登录授权",
-        "📝 草稿管理": "草稿管理",
-        "🚀 爬取管理": "爬取管理",
-        "🛠️ 设置": "设置",
-        "ℹ️ 关于": "关于",
-    }
     with st.sidebar:
         render_sidebar_brand()
-        page_label = st.radio("页面", list(page_options.keys()), key="sidebar_page")
+        page_label = st.radio("页面", list(PAGE_OPTIONS.keys()), key="sidebar_page")
         if st.button("刷新页面", key="sidebar_refresh"):
             st.rerun()
-    page = page_options[page_label]
+    page = PAGE_OPTIONS[page_label]
 
     if page == "仪表盘":
         show_dashboard(dm)
