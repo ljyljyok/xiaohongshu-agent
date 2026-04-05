@@ -637,6 +637,39 @@ def render_empty_shell(title: str, description: str):
     )
 
 
+def render_stage_progress_cards(payload: dict):
+    if not payload:
+        return
+
+    stage_order = ["search", "hydrate", "filter", "media", "notes", "audit", "save"]
+    active_stage = str(payload.get("stage_id") or "init")
+    active_index = stage_order.index(active_stage) if active_stage in stage_order else -1
+
+    cards = [
+        ("搜索候选", "🔎", int(payload.get("searched") or 0), max(int(payload.get("max_posts") or 1), int(payload.get("searched") or 0), 1)),
+        ("详情补抓", "🧲", int(payload.get("hydrated") or 0), max(int(payload.get("searched") or 0), 1)),
+        ("AI 筛选", "🧠", int(payload.get("ai_related") or 0) + int(payload.get("skipped_non_ai") or 0), max(int(payload.get("hydrated") or payload.get("searched") or 0), 1)),
+        ("媒体处理", "🖼️", int(payload.get("media_processed") or 0) + int(payload.get("skipped_video") or 0), max(int(payload.get("ai_related") or 0), 1)),
+        ("阅读笔记", "📝", int(payload.get("media_processed") or 0), max(int(payload.get("media_processed") or 0), 1)),
+        ("内容审核", "✅", int(payload.get("approved") or 0) + int(payload.get("rejected") or 0), max(int(payload.get("media_processed") or 0), 1)),
+    ]
+
+    cols = st.columns(3)
+    for index, (title, icon, current, total) in enumerate(cards):
+        with cols[index % 3]:
+            card = st.container(border=True)
+            card.markdown("**{} {}**".format(icon, title))
+            progress_value = min(max(current / max(total, 1), 0.0), 1.0)
+            card.progress(progress_value)
+            if active_index > index:
+                state_text = "已完成"
+            elif active_stage == stage_order[index]:
+                state_text = "进行中"
+            else:
+                state_text = "等待中"
+            card.caption("{} / {} | {}".format(current, total, state_text))
+
+
 def render_sidebar_brand():
     st.markdown(
         """
@@ -1448,6 +1481,18 @@ def show_crawl_management(dm: DraftManager):
     payload = read_json(status_file)
     task_status = "运行中" if payload and payload.get("status") == "running" else "待启动"
 
+    if payload and payload.get("status") == "running":
+        components.html(
+            """
+            <script>
+            setTimeout(function() {
+                window.parent.location.reload();
+            }, 4000);
+            </script>
+            """,
+            height=0,
+        )
+
     st.caption("当前模式: 关键词 [{}] | 最大帖子数 {} | {}".format(keywords, int(max_posts), "跳过视频" if skip_video else "保留视频"))
     render_summary_ribbon([
         ("关键词", keywords or "未设置"),
@@ -1479,6 +1524,7 @@ def show_crawl_management(dm: DraftManager):
         current = int(payload.get("current") or 0)
         total = max(1, int(payload.get("total") or 1))
         st.progress(min(current / total, 1.0), text="当前阶段: {} ({}/{})".format(stage, current, total))
+        render_stage_progress_cards(payload)
 
         cols = st.columns(6)
         cols[0].metric("候选数", int(payload.get("searched") or 0))
@@ -1518,7 +1564,7 @@ def show_crawl_management(dm: DraftManager):
 
     if log_file:
         st.subheader("实时日志")
-        st.text_area("后台输出", value=read_text(log_file)[-6000:], height=280, key="crawl_log_view")
+        st.text_area("后台输出", value=read_log_text(log_file, max_chars=9000), height=320, key="crawl_log_view")
 
     latest_drafts = dm.list_drafts()[:5]
     if latest_drafts:
