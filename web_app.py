@@ -762,7 +762,7 @@ def show_dashboard(dm: DraftManager):
     pending = sum(1 for d in drafts if d.get("status") == "draft")
     approved = sum(1 for d in drafts if d.get("post", {}).get("audit", {}).get("publish_ready"))
 
-    render_hero("仪表盘", "总览草稿、审核、收藏和发布进度，快速找到下一步要处理的内容。")
+    render_hero("仪表盘", "总览草稿、审核、收藏和发布进度，快速找到下一步要处理的内容。", icon="🏠")
     render_section("仪表盘", "总览草稿、审核、收藏和发布进度。")
     st.header("仪表盘")
     col1, col2, col3, col4, col5 = st.columns(5)
@@ -787,6 +787,20 @@ def show_dashboard(dm: DraftManager):
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
         with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
+            render_cover_card(
+                title,
+                "{} | {} | 作者 {}".format(status_label, media_label, post.get("author") or "未知"),
+                [
+                    ("{}".format(status_label), "green" if draft.get("status") == "published" else "slate"),
+                    ("{}".format(media_label), "orange" if post.get("media_type") == "video" else "slate"),
+                    ("已收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else "slate"),
+                ],
+            )
+            render_action_strip([
+                "来源 {}".format(post.get("source") or "未知"),
+                "图片 {} 张".format(len(images)),
+                "审核 {}".format("通过" if post.get("audit", {}).get("publish_ready") else "待确认"),
+            ])
             render_badges([
                 ("{}".format(status_label), "green" if draft.get("status") == "published" else ""),
                 ("{}".format(media_label), "orange" if post.get("media_type") == "video" else ""),
@@ -797,7 +811,7 @@ def show_dashboard(dm: DraftManager):
 
 
 def show_login_page():
-    render_hero("登录授权", "通过 MCP 维持登录态，并同步查看账号状态与登录日志。")
+    render_hero("登录授权", "通过 MCP 维持登录态，并同步查看账号状态与登录日志。", icon="🔐")
     render_section("登录状态", "检查当前登录态、MCP Profile 与 Cookie 回退信息。")
     st.header("登录授权")
     status, file_state = get_login_state()
@@ -837,7 +851,7 @@ def show_login_page():
 
 def show_drafts(dm: DraftManager):
     drafts = dm.list_drafts()
-    render_hero("草稿管理", "查看、筛选、发布或收藏已生成的草稿，并直接打开原贴来源。")
+    render_hero("草稿管理", "查看、筛选、发布或收藏已生成的草稿，并直接打开原贴来源。", icon="📝")
     render_section("草稿列表", "快速筛选内容类型、收藏状态和审核状态。")
     st.header("草稿管理")
     if not drafts:
@@ -885,6 +899,20 @@ def show_drafts(dm: DraftManager):
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
         with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
+            render_cover_card(
+                title,
+                "{} | {} | {}".format(status_label, media_label, post.get("source") or "未知来源"),
+                [
+                    ("收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else "slate"),
+                    ("通过审核" if post.get("audit", {}).get("publish_ready") else "待审核", "green" if post.get("audit", {}).get("publish_ready") else "orange"),
+                    ("{}".format(media_label), "orange" if post.get("media_type") == "video" else "slate"),
+                ],
+            )
+            render_action_strip([
+                "作者 {}".format(post.get("author") or "未知"),
+                "图片 {} 张".format(len(images)),
+                "原贴 {}".format("已收藏" if post.get("source_favorited") else "未收藏"),
+            ])
             render_badges([
                 ("收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else ""),
                 ("通过审核" if post.get("audit", {}).get("publish_ready") else "待审核", "green" if post.get("audit", {}).get("publish_ready") else "orange"),
@@ -918,7 +946,7 @@ def show_drafts(dm: DraftManager):
 
 
 def show_crawl_management(dm: DraftManager):
-    render_hero("爬取管理", "配置关键词、抓取规模与视频策略，并实时查看任务进度和结果汇总。")
+    render_hero("爬取管理", "配置关键词、抓取规模与视频策略，并实时查看任务进度和结果汇总。", icon="🚀")
     render_section("任务配置", "先保存参数，再启动实时爬取。")
     st.header("爬取管理")
     settings = load_crawl_settings()
@@ -1001,7 +1029,7 @@ def show_crawl_management(dm: DraftManager):
 
 
 def show_settings():
-    render_hero("设置", "统一管理模型路由、本地 Ollama、API Key 和降级策略。")
+    render_hero("设置", "统一管理模型路由、本地 Ollama、API Key 和降级策略。", icon="🛠️")
     render_section("模型路由", "为内容分析、润色、审核和媒体理解分别指定模型策略。")
     st.header("设置")
     settings = load_ai_settings()
@@ -1060,7 +1088,7 @@ def show_settings():
 
 
 def show_about():
-    render_hero("关于", "这是一份稳定、可维护的控制台入口，优先保证可读性与核心功能的完整性。")
+    render_hero("关于", "这是一份稳定、可维护的控制台入口，优先保证可读性与核心功能的完整性。", icon="ℹ️")
     render_section("说明", "用更清晰的视觉层次，把抓取、草稿和登录流程串起来。")
     st.header("关于")
     st.write("这是当前项目的稳定版控制台入口，负责串联登录、抓取、草稿查看与基础设置。")
