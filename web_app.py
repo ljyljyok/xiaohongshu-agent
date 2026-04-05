@@ -46,11 +46,25 @@ UI_SETTINGS_FILE = os.path.join(XHS_STATE_DIR, "ui_runtime_state.json")
 
 APP_CSS = """
 <style>
+    :root {
+        --bg-0: #f8fafc;
+        --bg-1: #eef2ff;
+        --bg-2: #fff7ed;
+        --ink-0: #0f172a;
+        --ink-1: #334155;
+        --line-0: rgba(148, 163, 184, 0.18);
+        --shadow-0: 0 16px 36px rgba(15, 23, 42, 0.08);
+        --shadow-1: 0 10px 22px rgba(15, 23, 42, 0.05);
+        --accent: #2563eb;
+        --accent-2: #ea580c;
+    }
     .stApp {
         background:
-            radial-gradient(circle at top left, rgba(97, 119, 255, 0.12), transparent 28%),
-            radial-gradient(circle at top right, rgba(255, 122, 89, 0.08), transparent 24%),
-            linear-gradient(180deg, #f8fafc 0%, #f3f6fb 100%);
+            radial-gradient(circle at top left, rgba(37, 99, 235, 0.13), transparent 28%),
+            radial-gradient(circle at top right, rgba(234, 88, 12, 0.1), transparent 24%),
+            linear-gradient(180deg, var(--bg-0) 0%, #f3f6fb 100%);
+        color: var(--ink-0);
+        font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
     }
     .stApp > header {
         background: transparent;
@@ -66,25 +80,42 @@ APP_CSS = """
         color: #e5e7eb !important;
     }
     div[data-testid="stMetric"] {
-        border-radius: 18px;
-        padding: 1rem 1rem 0.75rem 1rem;
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid rgba(148, 163, 184, 0.18);
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        border-radius: 20px;
+        padding: 1rem 1rem 0.8rem 1rem;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-1);
     }
     div[data-testid="stExpander"] {
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.92);
-        border: 1px solid rgba(148, 163, 184, 0.16);
-        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.05);
-        margin-bottom: 0.75rem;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-1);
+        margin-bottom: 0.85rem;
     }
     div[data-testid="stTabs"] {
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.88);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.92);
         padding: 0.25rem 0.5rem 0.5rem 0.5rem;
-        border: 1px solid rgba(148, 163, 184, 0.16);
-        box-shadow: 0 10px 26px rgba(15, 23, 42, 0.04);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-1);
+    }
+    div[data-testid="stButton"] > button {
+        border-radius: 14px;
+        border: 1px solid rgba(37, 99, 235, 0.18);
+        box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    div[data-testid="stButton"] > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.14);
+    }
+    div[data-testid="stTextArea"] textarea,
+    div[data-testid="stTextInput"] input,
+    div[data-testid="stNumberInput"] input {
+        border-radius: 14px !important;
+        border: 1px solid rgba(148, 163, 184, 0.2) !important;
+        background: rgba(255, 255, 255, 0.96) !important;
     }
     .block-container {
         padding-top: 1.5rem;
@@ -94,12 +125,12 @@ APP_CSS = """
         border-radius: 24px;
         padding: 1.25rem 1.5rem;
         margin-bottom: 1rem;
-        color: #0f172a;
+        color: var(--ink-0);
         background:
             linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(236, 72, 153, 0.08)),
             rgba(255, 255, 255, 0.82);
-        border: 1px solid rgba(148, 163, 184, 0.18);
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-0);
     }
     .hero-banner h1 {
         margin: 0 0 0.25rem 0;
@@ -112,16 +143,42 @@ APP_CSS = """
         color: #334155;
         font-size: 0.98rem;
     }
-    .soft-card {
-        border-radius: 18px;
-        padding: 0.9rem 1rem;
-        background: rgba(255, 255, 255, 0.88);
-        border: 1px solid rgba(148, 163, 184, 0.14);
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
-    }
     .small-note {
         color: #64748b;
         font-size: 0.92rem;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.7rem;
+        margin-right: 0.35rem;
+        border-radius: 999px;
+        font-size: 0.78rem;
+        line-height: 1.4;
+        background: rgba(37, 99, 235, 0.08);
+        color: var(--accent);
+        border: 1px solid rgba(37, 99, 235, 0.12);
+    }
+    .status-badge.green {
+        background: rgba(22, 163, 74, 0.08);
+        color: #15803d;
+        border-color: rgba(22, 163, 74, 0.12);
+    }
+    .status-badge.orange {
+        background: rgba(234, 88, 12, 0.08);
+        color: #c2410c;
+        border-color: rgba(234, 88, 12, 0.12);
+    }
+    .section-shell {
+        border-radius: 22px;
+        padding: 1rem 1.1rem;
+        margin-bottom: 0.9rem;
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid var(--line-0);
+        box-shadow: var(--shadow-1);
+    }
+    .section-shell h2 {
+        margin: 0 0 0.2rem 0;
+        font-size: 1.1rem;
     }
 </style>
 """
@@ -141,6 +198,29 @@ def render_hero(title: str, subtitle: str):
         """.format(title, subtitle),
         unsafe_allow_html=True,
     )
+
+
+def render_section(title: str, subtitle: str = ""):
+    extra = f"<div class='small-note'>{subtitle}</div>" if subtitle else ""
+    st.markdown(
+        f"""
+        <div class="section-shell">
+            <h2>{title}</h2>
+            {extra}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_badges(items: list[tuple[str, str]]):
+    html = "".join(
+        f"<span class='status-badge {cls}'>{text}</span>"
+        for text, cls in items
+        if text
+    )
+    if html:
+        st.markdown(html, unsafe_allow_html=True)
 
 
 def load_json(path: str, default):
@@ -549,6 +629,7 @@ def show_dashboard(dm: DraftManager):
     approved = sum(1 for d in drafts if d.get("post", {}).get("audit", {}).get("publish_ready"))
 
     render_hero("仪表盘", "总览草稿、审核、收藏和发布进度，快速找到下一步要处理的内容。")
+    render_section("仪表盘", "总览草稿、审核、收藏和发布进度。")
     st.header("仪表盘")
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("草稿总数", len(drafts))
@@ -572,15 +653,18 @@ def show_dashboard(dm: DraftManager):
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
         with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
-            info_cols = st.columns(3)
-            info_cols[0].caption("收藏状态: {}".format("已收藏" if draft.get("favorite") else "未收藏"))
-            info_cols[1].caption("来源: {}".format(post.get("source") or "未知"))
-            info_cols[2].caption("作者: {}".format(post.get("author") or "未知"))
+            render_badges([
+                ("{}".format(status_label), "green" if draft.get("status") == "published" else ""),
+                ("{}".format(media_label), "orange" if post.get("media_type") == "video" else ""),
+                ("已收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else ""),
+            ])
+            st.caption("来源: {} | 作者: {}".format(post.get("source") or "未知", post.get("author") or "未知"))
             render_post_tabs(post, "dashboard_post_{}".format(idx))
 
 
 def show_login_page():
     render_hero("登录授权", "通过 MCP 维持登录态，并同步查看账号状态与登录日志。")
+    render_section("登录状态", "检查当前登录态、MCP Profile 与 Cookie 回退信息。")
     st.header("登录授权")
     status, file_state = get_login_state()
     state_label = LOGIN_STATUS_LABELS.get(status.get("state"), format_status_label(status.get("state")))
@@ -620,6 +704,7 @@ def show_login_page():
 def show_drafts(dm: DraftManager):
     drafts = dm.list_drafts()
     render_hero("草稿管理", "查看、筛选、发布或收藏已生成的草稿，并直接打开原贴来源。")
+    render_section("草稿列表", "快速筛选内容类型、收藏状态和审核状态。")
     st.header("草稿管理")
     if not drafts:
         st.info("暂无草稿。")
@@ -666,11 +751,12 @@ def show_drafts(dm: DraftManager):
         status_label = format_status_label(draft.get("status", "未知"))
         media_label = format_media_label(post.get("media_type", "image"))
         with st.expander("{} | {} | {} | {}张图片".format(title, status_label, media_label, len(images)), expanded=False):
-            badge_cols = st.columns(4)
-            badge_cols[0].caption("收藏: {}".format("是" if draft.get("favorite") else "否"))
-            badge_cols[1].caption("来源: {}".format(post.get("source") or "未知"))
-            badge_cols[2].caption("作者: {}".format(post.get("author") or "未知"))
-            badge_cols[3].caption("审核通过: {}".format("是" if post.get("audit", {}).get("publish_ready") else "否"))
+            render_badges([
+                ("收藏" if draft.get("favorite") else "未收藏", "green" if draft.get("favorite") else ""),
+                ("通过审核" if post.get("audit", {}).get("publish_ready") else "待审核", "green" if post.get("audit", {}).get("publish_ready") else "orange"),
+                ("{}".format(media_label), "orange" if post.get("media_type") == "video" else ""),
+            ])
+            st.caption("来源: {} | 作者: {}".format(post.get("source") or "未知", post.get("author") or "未知"))
             render_post_tabs(post, "draft_post_{}".format(idx))
 
             col1, col2, col3 = st.columns(3)
@@ -699,6 +785,7 @@ def show_drafts(dm: DraftManager):
 
 def show_crawl_management(dm: DraftManager):
     render_hero("爬取管理", "配置关键词、抓取规模与视频策略，并实时查看任务进度和结果汇总。")
+    render_section("任务配置", "先保存参数，再启动实时爬取。")
     st.header("爬取管理")
     settings = load_crawl_settings()
 
@@ -725,6 +812,7 @@ def show_crawl_management(dm: DraftManager):
     payload = read_json(status_file)
 
     if payload:
+        render_section("实时进度", "阶段、统计和日志都在这里刷新。")
         stage = payload.get("stage_label") or payload.get("stage_id") or "初始化"
         current = int(payload.get("current") or 0)
         total = max(1, int(payload.get("total") or 1))
@@ -771,6 +859,7 @@ def show_crawl_management(dm: DraftManager):
 
     latest_drafts = dm.list_drafts()[:5]
     if latest_drafts:
+        render_section("最近草稿", "这里会直接显示最新生成的内容，方便快速检查结果。")
         st.subheader("最近生成的草稿")
         for index, draft in enumerate(latest_drafts):
             post = draft.get("post", {})
@@ -779,6 +868,7 @@ def show_crawl_management(dm: DraftManager):
 
 def show_settings():
     render_hero("设置", "统一管理模型路由、本地 Ollama、API Key 和降级策略。")
+    render_section("模型路由", "为内容分析、润色、审核和媒体理解分别指定模型策略。")
     st.header("设置")
     settings = load_ai_settings()
     ollama_available, ollama_message, detected_model = check_ollama_available()
@@ -837,6 +927,7 @@ def show_settings():
 
 def show_about():
     render_hero("关于", "这是一份稳定、可维护的控制台入口，优先保证可读性与核心功能的完整性。")
+    render_section("说明", "用更清晰的视觉层次，把抓取、草稿和登录流程串起来。")
     st.header("关于")
     st.write("这是当前项目的稳定版控制台入口，负责串联登录、抓取、草稿查看与基础设置。")
     st.write("当前页面优先保证中文可读、结构稳定、核心功能可用，后续可以继续在这份干净版本上补回更复杂的高级交互。")
