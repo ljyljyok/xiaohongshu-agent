@@ -686,25 +686,44 @@ def show_drafts(dm: DraftManager):
 
 
 def show_crawl_management(dm: DraftManager):
-    st.header("爬取管理")
+    st.markdown("## 🕷️ 爬取任务管理")
     settings = load_crawl_settings()
 
-    keywords = st.text_input("搜索关键词", settings["keywords"], key="crawl_keywords")
-    max_posts = st.number_input("最大帖子数", min_value=1, max_value=50, value=settings["max_posts"], step=1, key="crawl_max_posts")
-    skip_video = st.checkbox("跳过视频帖", value=settings["skip_video"], key="crawl_skip_video")
+    st.markdown("### ⚙️ 爬取配置")
+    config_col1, config_col2, config_col3 = st.columns(3)
 
-    st.caption("当前模式: 关键词 [{}] | 最大帖子数 {} | {}".format(keywords, int(max_posts), "跳过视频" if skip_video else "保留视频"))
+    with config_col1:
+        keywords = st.text_input("🔍 搜索关键词", settings["keywords"], key="crawl_keywords")
 
+    with config_col2:
+        max_posts = st.number_input(
+            "📊 最大帖子数",
+            min_value=1,
+            max_value=50,
+            value=settings["max_posts"],
+            step=1,
+            key="crawl_max_posts",
+        )
+
+    with config_col3:
+        skip_video = st.checkbox("⏭️ 跳过视频帖", value=settings["skip_video"], key="crawl_skip_video")
+
+    st.info(
+        f"📋 当前模式: 关键词 **[{keywords}]** | 最大帖子数 **{int(max_posts)}** | {'⏭️ 跳过视频' if skip_video else '🎬 保留视频'}"
+    )
+
+    st.markdown("#### 🎮 操作控制")
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("保存爬取设置", key="save_crawl_settings_btn"):
+        if st.button("💾 保存爬取设置", key="save_crawl_settings_btn", use_container_width=True):
             save_crawl_settings(keywords, int(max_posts), skip_video)
-            st.success("爬取设置已保存")
+            st.success("✅ 爬取设置已保存")
     with col2:
-        if st.button("开始实时爬取", type="primary", key="start_crawl_btn"):
+        if st.button("🚀 开始实时爬取", type="primary", key="start_crawl_btn", use_container_width=True):
             save_crawl_settings(keywords, int(max_posts), skip_video)
             start_crawl(keywords, int(max_posts), skip_video)
-            st.success("已启动后台爬取任务。")
+            st.success("✅ 已启动后台爬取任务。")
+            st.balloons()
 
     ui_state = get_ui_state()
     status_file = ui_state.get("crawl_status_file", "")
@@ -712,56 +731,75 @@ def show_crawl_management(dm: DraftManager):
     payload = read_json(status_file)
 
     if payload:
+        st.markdown("---")
+        st.markdown("### 📈 实时进度监控")
+
         stage = payload.get("stage_label") or payload.get("stage_id") or "初始化"
         current = int(payload.get("current") or 0)
         total = max(1, int(payload.get("total") or 1))
-        st.progress(min(current / total, 1.0), text="当前阶段: {} ({}/{})".format(stage, current, total))
+        progress_value = min(current / total, 1.0) if total > 0 else 0
+        st.progress(progress_value, text=f"当前阶段: **{stage}** ({current}/{total})")
 
         cols = st.columns(6)
-        cols[0].metric("候选数", int(payload.get("searched") or 0))
-        cols[1].metric("补抓详情", int(payload.get("hydrated") or 0))
-        cols[2].metric("AI 相关", int(payload.get("ai_related") or 0))
-        cols[3].metric("媒体处理", int(payload.get("media_processed") or 0))
-        cols[4].metric("通过审核", int(payload.get("approved") or 0))
-        cols[5].metric("打回数", int(payload.get("rejected") or 0))
+        metrics_data = [
+            ("🔍 候选数", int(payload.get("searched") or 0)),
+            ("📄 补抓详情", int(payload.get("hydrated") or 0)),
+            ("🤖 AI 相关", int(payload.get("ai_related") or 0)),
+            ("🖼️ 媒体处理", int(payload.get("media_processed") or 0)),
+            ("✅ 通过审核", int(payload.get("approved") or 0)),
+            ("❌ 打回数", int(payload.get("rejected") or 0)),
+        ]
+        for idx, (label, value) in enumerate(metrics_data):
+            with cols[idx]:
+                st.metric(label, value, delta=None)
 
         if payload.get("last_message"):
-            st.caption(payload.get("last_message"))
+            st.caption(f"💬 {payload.get('last_message')}")
         if payload.get("last_error"):
-            st.error("最近错误: {}".format(payload.get("last_error")))
+            st.error(f"❌ 最近错误: {payload.get('last_error')}")
 
         summary = payload.get("result_summary") or {}
         if summary:
-            st.subheader("结果汇总")
+            st.markdown("#### 📊 结果汇总")
             sum_cols = st.columns(4)
-            sum_cols[0].metric("搜索候选", int(summary.get("searched") or payload.get("searched") or 0))
-            sum_cols[1].metric("详情成功", int(summary.get("hydrated_success") or payload.get("hydrated") or 0))
-            sum_cols[2].metric("媒体成功", int(summary.get("media_processed") or payload.get("media_processed") or 0))
-            sum_cols[3].metric("最终草稿", int(summary.get("approved_posts") or payload.get("approved") or 0))
+            summary_metrics = [
+                ("🔍 搜索候选", int(summary.get("searched") or payload.get("searched") or 0)),
+                ("✅ 详情成功", int(summary.get("hydrated_success") or payload.get("hydrated") or 0)),
+                ("🖼️ 媒体成功", int(summary.get("media_processed") or payload.get("media_processed") or 0)),
+                ("📝 最终草稿", int(summary.get("approved_posts") or payload.get("approved") or 0)),
+            ]
+            for idx, (label, value) in enumerate(summary_metrics):
+                with sum_cols[idx]:
+                    st.metric(label, value, delta=None)
+
             if summary.get("notes"):
                 for note in summary.get("notes", []):
-                    st.write("- {}".format(note))
+                    st.write(f"- ℹ️ {note}")
             if summary.get("keyword_hits"):
-                st.write("关键词命中:")
+                st.write("**关键词命中:**")
                 for item in summary.get("keyword_hits", []):
-                    st.write("- {}: {}".format(item.get("keyword", ""), item.get("hits", 0)))
+                    st.write(f"- 🔑 {item.get('keyword', '')}: {item.get('hits', 0)} 次")
             if summary.get("top_rejection_reasons"):
-                st.write("主要打回原因:")
+                st.write("**主要打回原因:**")
                 for item in summary.get("top_rejection_reasons", []):
-                    st.write("- {}: {}".format(item.get("reason", "未说明"), item.get("count", 0)))
+                    st.write(f"- ❌ {item.get('reason', '未说明')}: {item.get('count', 0)} 次")
     else:
-        st.info("当前还没有进行中的爬取任务。保存设置后即可启动实时爬取。")
+        st.info("ℹ️ 当前还没有进行中的爬取任务。保存设置后即可启动实时爬取。")
 
     if log_file:
-        st.subheader("实时日志")
-        st.text_area("后台输出", value=read_text(log_file)[-6000:], height=280, key="crawl_log_view")
+        st.markdown("---")
+        st.markdown("### 📜 实时日志输出")
+        st.text_area("🖥️ 后台输出", value=read_text(log_file)[-6000:], height=280, key="crawl_log_view")
 
     latest_drafts = dm.list_drafts()[:5]
     if latest_drafts:
-        st.subheader("最近生成的草稿")
+        st.markdown("---")
+        st.markdown("### 🕐 最近生成的草稿")
         for index, draft in enumerate(latest_drafts):
             post = draft.get("post", {})
-            st.write("- {} | {} | {}".format(post.get("title") or "无标题", format_status_label(draft.get("status")), format_media_label(post.get("media_type"))))
+            status_emoji = {"待发布": "⏳", "已发布": "✅", "已丢弃": "🗑️"}.get(format_status_label(draft.get("status")), "📋")
+            media_emoji = {"图文": "🖼️", "视频": "🎬"}.get(format_media_label(post.get("media_type")), "📄")
+            st.write(f"{index + 1}. {status_emoji} **{post.get('title', '无标题')}** | {format_status_label(draft.get('status'))} | {media_emoji} {format_media_label(post.get('media_type'))}")
 
 
 def show_settings():
