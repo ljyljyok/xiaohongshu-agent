@@ -578,6 +578,8 @@ class XiaohongshuCrawler:
         patterns = [
             r"https?://[^\"'\\\s>]+?\.(?:jpg|jpeg|png|webp)(?:\?[^\"'\\\s>]*)?",
             r"//[^\"'\\\s>]+?\.(?:jpg|jpeg|png|webp)(?:\?[^\"'\\\s>]*)?",
+            r"\"urlDefault\"\s*:\s*\"([^\"]+)\"",
+            r"\"url\"\s*:\s*\"([^\"]+?(?:jpg|jpeg|png|webp)[^\"]*)\"",
         ]
         for pattern in patterns:
             for match in re.findall(pattern, page_source, re.IGNORECASE):

@@ -152,6 +152,16 @@ class OllamaClient:
         response.raise_for_status()
         return response.json()
 
+    def _post_openai_compatible(self, payload, timeout):
+        response = self.session.post(
+            self.base_url + "/v1/chat/completions",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps(payload),
+            timeout=timeout,
+        )
+        response.raise_for_status()
+        return response.json()
+
     def _create_completion(self, model=None, messages=None, temperature=0.2, max_tokens=512, response_format=None):
         converted_messages = self._convert_messages(messages or [])
         chat_payload = {
@@ -164,31 +174,72 @@ class OllamaClient:
             },
         }
 
+        attempted = []
         try:
+            attempted.append("/api/chat")
             data = self._post_json("/api/chat", chat_payload, timeout=180)
             content = ((data.get("message") or {}).get("content") or "").strip()
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
+            )
         except requests.HTTPError as exc:
             response = getattr(exc, "response", None)
-            status_code = getattr(response, "status_code", None)
-            if status_code != 404:
+            if getattr(response, "status_code", None) not in (404, 405):
                 raise
-            generate_payload = {
-                "model": model or self.default_model,
-                "prompt": self._messages_to_prompt(messages or []),
-                "stream": False,
-                "options": {
-                    "temperature": temperature,
-                    "num_predict": max_tokens,
-                },
-            }
-            generate_images = self._extract_generate_images(messages or [])
-            if generate_images:
-                generate_payload["images"] = generate_images
+        except Exception:
+            pass
+
+        generate_payload = {
+            "model": model or self.default_model,
+            "prompt": self._messages_to_prompt(messages or []),
+            "stream": False,
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens,
+            },
+        }
+        generate_images = self._extract_generate_images(messages or [])
+        if generate_images:
+            generate_payload["images"] = generate_images
+        try:
+            attempted.append("/api/generate")
             data = self._post_json("/api/generate", generate_payload, timeout=180)
             content = str(data.get("response") or "").strip()
-        return SimpleNamespace(
-            choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
-        )
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
+            )
+        except requests.HTTPError as exc:
+            response = getattr(exc, "response", None)
+            if getattr(response, "status_code", None) not in (404, 405):
+                raise
+        except Exception:
+            pass
+
+        openai_payload = {
+            "model": model or self.default_model,
+            "messages": messages or [],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+        if response_format:
+            openai_payload["response_format"] = response_format
+        try:
+            attempted.append("/v1/chat/completions")
+            data = self._post_openai_compatible(openai_payload, timeout=180)
+            choices = data.get("choices") or []
+            content = ""
+            if choices:
+                content = ((choices[0] or {}).get("message") or {}).get("content") or ""
+            return SimpleNamespace(
+                choices=[SimpleNamespace(message=SimpleNamespace(content=content.strip()))]
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                "Ollama 接口均不可用，已尝试 {}，最后错误: {}".format(
+                    " -> ".join(attempted),
+                    str(exc)[:180],
+                )
+            ) from exc
 
 
 def check_ollama_available(base_url=None, model_name=None):
