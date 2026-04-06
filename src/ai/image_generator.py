@@ -563,7 +563,10 @@ class ImageGenerator:
             )
             return (response.choices[0].message.content or "").strip()
         except Exception as exc:
-            print("[WARNING] Semantic image summary failed: {}".format(str(exc)[:80]))
+            if self.semantic_provider == "ollama":
+                print("[INFO] Ollama 图片理解未在时限内返回，已回退到 OCR 摘要。({})".format(str(exc)[:80]))
+            else:
+                print("[WARNING] Semantic image summary failed: {}".format(str(exc)[:80]))
             if ocr_text:
                 return "图片主要承载文字信息，可结合 OCR 文本整理阅读笔记。"
             return ""

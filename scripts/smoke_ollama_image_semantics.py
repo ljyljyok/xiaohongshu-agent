@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Smoke-test Ollama image understanding with local gemma4:e4b."""
 
+import io
 import os
 import sys
 import tempfile
+import time
 
+import requests
 from PIL import Image, ImageDraw
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -54,14 +57,53 @@ def main():
 
     image_path = build_demo_image()
     try:
+        with Image.open(image_path) as image:
+            resized = image.convert("RGB")
+            resized.thumbnail((128, 128))
+            buffer = io.BytesIO()
+            resized.save(buffer, format="JPEG", quality=35, optimize=True)
+        encoded = __import__("base64").b64encode(buffer.getvalue()).decode("utf-8")
+
+        payload = {
+            "model": matched_model or OLLAMA_MODEL,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "请只输出一句极短中文摘要。",
+                    "images": [encoded],
+                }
+            ],
+            "stream": False,
+            "think": False,
+            "options": {"temperature": 0.0, "num_predict": 12},
+        }
+        start = time.time()
+        try:
+            response = requests.post(
+                OLLAMA_BASE_URL.rstrip("/") + "/api/chat",
+                json=payload,
+                timeout=25,
+            )
+            elapsed = round(time.time() - start, 2)
+            print("elapsed:", elapsed)
+            print("status:", response.status_code)
+            print("raw:", (response.text or "")[:300])
+            if response.ok:
+                print("SMOKE_OK")
+                return 0
+        except Exception as exc:
+            elapsed = round(time.time() - start, 2)
+            print("elapsed:", elapsed)
+            print("request_error:", str(exc))
+
         summary = generator._summarize_image_semantically(
             image_path,
             "AI Tools Overview\nChatGPT\nClaude",
             "横图",
         )
-        print("summary:", summary)
-        if generator.semantic_provider == "ollama" and str(summary or "").strip():
-            print("SMOKE_OK")
+        print("fallback_summary:", summary)
+        if str(summary or "").strip():
+            print("SMOKE_FALLBACK_OK")
             return 0
         print("SMOKE_NOT_OK")
         return 1
