@@ -559,6 +559,7 @@ class ImageGenerator:
                 ],
                 temperature=0.2,
                 max_tokens=32,
+                timeout=20,
             )
             return (response.choices[0].message.content or "").strip()
         except Exception as exc:

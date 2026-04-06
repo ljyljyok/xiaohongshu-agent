@@ -26,13 +26,14 @@ class _ChatCompletions:
     def __init__(self, parent):
         self._parent = parent
 
-    def create(self, model=None, messages=None, temperature=0.2, max_tokens=512, response_format=None):
+    def create(self, model=None, messages=None, temperature=0.2, max_tokens=512, response_format=None, timeout=None):
         return self._parent._create_completion(
             model=model,
             messages=messages or [],
             temperature=temperature,
             max_tokens=max_tokens,
             response_format=response_format,
+            timeout=timeout,
         )
 
 
@@ -50,7 +51,7 @@ class TextLLMClient:
         self.chat = _ChatNamespace(self)
         self.session = requests.Session()
 
-    def _create_completion(self, model=None, messages=None, temperature=0.2, max_tokens=512, response_format=None):
+    def _create_completion(self, model=None, messages=None, temperature=0.2, max_tokens=512, response_format=None, timeout=None):
         payload = {
             "model": model or self.default_model,
             "messages": messages or [],
@@ -67,7 +68,7 @@ class TextLLMClient:
                 "Content-Type": "application/json",
             },
             data=json.dumps(payload),
-            timeout=90,
+            timeout=timeout or 90,
         )
         response.raise_for_status()
         data = response.json()
@@ -204,7 +205,7 @@ class OllamaClient:
         self._endpoint_order_cache = ordered
         return list(ordered)
 
-    def _create_completion(self, model=None, messages=None, temperature=0.2, max_tokens=512, response_format=None):
+    def _create_completion(self, model=None, messages=None, temperature=0.2, max_tokens=512, response_format=None, timeout=None):
         converted_messages = self._convert_messages(messages or [])
         chat_payload = {
             "model": model or self.default_model,
@@ -246,13 +247,13 @@ class OllamaClient:
             attempted.append(path)
             try:
                 if path == "/api/chat":
-                    data = self._post_json(path, chat_payload, timeout=180)
+                    data = self._post_json(path, chat_payload, timeout=timeout or 180)
                     content = self._extract_chat_content(data)
                 elif path == "/api/generate":
-                    data = self._post_json(path, generate_payload, timeout=180)
+                    data = self._post_json(path, generate_payload, timeout=timeout or 180)
                     content = str(data.get("response") or "").strip()
                 else:
-                    data = self._post_openai_compatible(openai_payload, timeout=180)
+                    data = self._post_openai_compatible(openai_payload, timeout=timeout or 180)
                     content = self._extract_openai_compatible_content(data)
                 return SimpleNamespace(
                     choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
