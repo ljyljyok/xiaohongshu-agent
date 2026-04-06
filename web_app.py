@@ -93,10 +93,18 @@ APP_CSS = """
         color: #e5e7eb;
     }
     section[data-testid="stSidebar"] .stRadio label,
-    section[data-testid="stSidebar"] .stButton button,
     section[data-testid="stSidebar"] p,
     section[data-testid="stSidebar"] span {
         color: #e5e7eb !important;
+    }
+    section[data-testid="stSidebar"] .stButton > button {
+        color: #0f172a !important;
+        background: rgba(255, 255, 255, 0.94) !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
+    }
+    section[data-testid="stSidebar"] .stButton > button:hover {
+        color: #0f172a !important;
+        background: rgba(255, 255, 255, 1) !important;
     }
     section[data-testid="stSidebar"] div[role="radiogroup"] > label {
         border-radius: 14px;
@@ -505,14 +513,14 @@ APP_CSS = """
     }
     .sidebar-brand h3 {
         margin: 0;
-        color: #f8fafc;
+        color: #f8fafc !important;
         font-size: 1.02rem;
         font-weight: 800;
         letter-spacing: 0.02em;
     }
     .sidebar-brand p {
         margin: 0.32rem 0 0 0;
-        color: rgba(226, 232, 240, 0.84);
+        color: rgba(226, 232, 240, 0.84) !important;
         font-size: 0.84rem;
         line-height: 1.45;
     }
@@ -1483,9 +1491,17 @@ def show_crawl_management(dm: DraftManager):
     status_file = ui_state.get("crawl_status_file", "")
     log_file = ui_state.get("crawl_log_file", "")
     payload = read_json(status_file)
-    task_status = "运行中" if payload and payload.get("status") == "running" else "待启动"
+    crawl_pid = int(ui_state.get("crawl_pid") or 0)
+    process_alive = pid_exists(crawl_pid)
+    if payload and payload.get("status") == "running" and not process_alive:
+        payload = dict(payload)
+        payload["status"] = "completed"
+        payload["last_message"] = payload.get("last_message") or "任务已结束，页面已停止自动刷新。"
+        ui_state["crawl_pid"] = 0
+        persist_ui_state()
+    task_status = "运行中" if payload and payload.get("status") == "running" and process_alive else "待启动"
 
-    if payload and payload.get("status") == "running":
+    if payload and payload.get("status") == "running" and process_alive:
         ui_state["active_page"] = "🚀 爬取管理"
         persist_ui_state()
         components.html(

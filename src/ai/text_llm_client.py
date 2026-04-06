@@ -210,6 +210,7 @@ class OllamaClient:
             "model": model or self.default_model,
             "messages": converted_messages,
             "stream": False,
+            "think": False,
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens,
@@ -220,6 +221,7 @@ class OllamaClient:
             "model": model or self.default_model,
             "prompt": self._messages_to_prompt(messages or []),
             "stream": False,
+            "think": False,
             "options": {
                 "temperature": temperature,
                 "num_predict": max_tokens,
@@ -234,6 +236,7 @@ class OllamaClient:
             "messages": messages or [],
             "temperature": temperature,
             "max_tokens": max_tokens,
+            "think": False,
         }
         if response_format:
             openai_payload["response_format"] = response_format
