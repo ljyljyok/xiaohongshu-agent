@@ -530,21 +530,23 @@ class ImageGenerator:
         try:
             with PILImage.open(image_path) as image:
                 buffer = io.BytesIO()
-                image.convert("RGB").save(buffer, format="JPEG", quality=85)
+                normalized = image.convert("RGB")
+                normalized.thumbnail((256, 256))
+                normalized.save(buffer, format="JPEG", quality=55, optimize=True)
             encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
             response = self.semantic_client.chat.completions.create(
                 model=getattr(self.semantic_client, "default_model", None),
                 messages=[
                     {
                         "role": "system",
-                        "content": "请直接用中文输出 1 句简短图片摘要，只描述图片里的关键信息、步骤或结论，不要解释，不要描述分辨率和颜色。",
+                        "content": "请只输出一句非常简短的图片摘要，优先概括图片里的关键信息，不要解释，不要描述分辨率和颜色。",
                     },
                     {
                         "role": "user",
                         "content": [
                             {
                                 "type": "text",
-                                "text": "这是一张{}。已识别的文字如下：{}\n请只输出 1 句图片语义摘要。".format(
+                                "text": "这是一张{}。已识别的文字如下：{}\n请只输出一句不超过 20 个字或 10 个英文单词的图片摘要。".format(
                                     orientation, self._truncate_text(ocr_text, 160) or "无明显文字"
                                 ),
                             },
@@ -556,7 +558,7 @@ class ImageGenerator:
                     },
                 ],
                 temperature=0.2,
-                max_tokens=96,
+                max_tokens=32,
             )
             return (response.choices[0].message.content or "").strip()
         except Exception as exc:

@@ -22,12 +22,11 @@ from src.ai.text_llm_client import check_ollama_available, initialize_text_llm
 def build_demo_image():
     handle, path = tempfile.mkstemp(suffix=".png")
     os.close(handle)
-    image = Image.new("RGB", (640, 360), (245, 247, 250))
+    image = Image.new("RGB", (160, 90), (245, 247, 250))
     draw = ImageDraw.Draw(image)
     draw.text((30, 40), "AI Tools Overview", fill=(20, 20, 20))
-    draw.text((30, 100), "1. ChatGPT workflow", fill=(20, 20, 20))
-    draw.text((30, 140), "2. Claude Code review", fill=(20, 20, 20))
-    draw.text((30, 180), "3. Ollama local model", fill=(20, 20, 20))
+    draw.text((20, 20), "ChatGPT", fill=(20, 20, 20))
+    draw.text((20, 45), "Claude", fill=(20, 20, 20))
     image.save(path)
     return path
 
@@ -57,7 +56,7 @@ def main():
     try:
         summary = generator._summarize_image_semantically(
             image_path,
-            "AI Tools Overview\nChatGPT workflow\nClaude Code review\nOllama local model",
+            "AI Tools Overview\nChatGPT\nClaude",
             "横图",
         )
         print("summary:", summary)
