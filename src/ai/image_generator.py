@@ -558,8 +558,8 @@ class ImageGenerator:
                     },
                 ],
                 temperature=0.2,
-                max_tokens=32,
-                timeout=20,
+                max_tokens=24,
+                timeout=120 if self.semantic_provider == "ollama" else 20,
             )
             return (response.choices[0].message.content or "").strip()
         except Exception as exc:
