@@ -537,14 +537,14 @@ class ImageGenerator:
                 messages=[
                     {
                         "role": "system",
-                        "content": "请用中文概括图片承载的信息。优先总结画面中的关键信息、步骤、结论，不要描述分辨率和颜色。",
+                        "content": "请直接用中文输出 1 句简短图片摘要，只描述图片里的关键信息、步骤或结论，不要解释，不要描述分辨率和颜色。",
                     },
                     {
                         "role": "user",
                         "content": [
                             {
                                 "type": "text",
-                                "text": "这是一张{}。已识别的文字如下：{}\n请给出 1-2 句图片语义摘要。".format(
+                                "text": "这是一张{}。已识别的文字如下：{}\n请只输出 1 句图片语义摘要。".format(
                                     orientation, self._truncate_text(ocr_text, 160) or "无明显文字"
                                 ),
                             },
@@ -556,7 +556,7 @@ class ImageGenerator:
                     },
                 ],
                 temperature=0.2,
-                max_tokens=180,
+                max_tokens=96,
             )
             return (response.choices[0].message.content or "").strip()
         except Exception as exc:
