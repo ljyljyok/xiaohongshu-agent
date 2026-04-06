@@ -50,3 +50,29 @@ def test_semantic_summary_uses_ollama_default_model():
     finally:
         if os.path.exists(image_path):
             os.remove(image_path)
+
+
+def test_semantic_summary_falls_back_on_ollama_timeout():
+    image_path = _make_test_image()
+    try:
+        generator = ImageGenerator()
+        generator.semantic_client = SimpleNamespace(
+            default_model="gemma4:e4b",
+            chat=SimpleNamespace(
+                completions=SimpleNamespace(
+                    create=lambda **kwargs: (_ for _ in ()).throw(TimeoutError("timed out"))
+                )
+            ),
+        )
+        generator.semantic_provider = "ollama"
+
+        result = generator._summarize_image_semantically(
+            image_path,
+            "AI Tools Overview\nChatGPT workflow\nClaude Code review",
+            "横图",
+        )
+        assert result
+        assert "文字" in result or "OCR" in result or "截图" in result
+    finally:
+        if os.path.exists(image_path):
+            os.remove(image_path)
